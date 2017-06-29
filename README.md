@@ -6,6 +6,12 @@
 
 bookにある定跡をやねうら王の学習ルーチンに食わせてゼロベクトルから学習を行ってください。
 
+## 評価関数
+
+振り飛車定跡で絞った評価関数です。
+
+- [やねうら王形式の評価関数](https://drive.google.com/file/d/0BwUOadFWQqvjVFFmYnRIODdsbGc/view?usp=sharing)
+
 ## book
 
 プロの棋譜、floodgate、棋書などを参考に以下の戦型の序盤定跡を作成。
