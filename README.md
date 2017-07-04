@@ -8,9 +8,11 @@ bookにある定跡をやねうら王の学習ルーチンに食わせてゼロ�
 
 ## 評価関数
 
-振り飛車定跡で絞った評価関数です。 (v1.0:2017/6/30)
+振り飛車定跡で絞った評価関数です。
+やねうら王などで使用できます。
 
-- [やねうら王形式の評価関数](https://drive.google.com/file/d/0BwUOadFWQqvjVFFmYnRIODdsbGc/view?usp=sharing)
+- [v2.0:2017/7/3](https://drive.google.com/file/d/0BwUOadFWQqvjUFVIMW8xX0dBa28/view?usp=sharing)
+- [v1.0:2017/6/30](https://drive.google.com/file/d/0BwUOadFWQqvjVFFmYnRIODdsbGc/view?usp=sharing)
 
 ## book
 
