@@ -4,7 +4,7 @@ import sys
 args = sys.argv
 max_delta_rating = 2**13 # レーティング差の最大値を表す定数
 
-def infer_rating(win, lose, draw): # レーティングの区間推定を行う
+def infer_rating(win, lose, draw=0): # レーティングの区間推定を行う
     def erorate(winrate): # 勝率からレーティング差を計算する
         if winrate == 1:
             return max_delta_rating
