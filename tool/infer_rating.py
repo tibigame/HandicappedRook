@@ -16,7 +16,7 @@ def infer_rating(win, lose, draw=0): # レーティングの区間推定を行�
         alpha2 = (1 - alpha) / 2
         lower = beta.ppf(alpha2, k, n - k + 1)
         upper = beta.ppf(1 - alpha2, k + 1, n - k)
-        return (lower, upper)
+        return (lower, upper, alpha)
  
     def print_result(result, sigma): # 結果の出力
         lowerrate = 0 if result[0] != result[0] else 100 * result[0]
@@ -42,4 +42,4 @@ def infer_rating(win, lose, draw=0): # レーティングの区間推定を行�
     print_result(clopper_pearson(win, match, 0.99999320465375052), 4.5)
     print_result(clopper_pearson(win, match, 0.99999942669685615), 5.0)
 
-infer_rating(int(args[1]), int(args[2]), int(args[3]))
+infer_rating(int(args[1]), int(args[2]), int(args[3] if len(args) >= 4 else 0))
