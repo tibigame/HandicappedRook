@@ -255,6 +255,8 @@ class Board:
         plt.plot([-1.0, -1.0], [-9.0, 0.0], color="#000000")
         plt.plot([-0.0, -0.0], [-9.0, 0.0], color="#000000")
 
+    def __plt_text(self, x, y, char, rot=0):
+        plt.text(x, y, char, fontsize = 24, rotation = rot, fontproperties=fp, ha='center', va='center')
     def __plot_ban(self, plt, kato123=False):
         if kato123: # ひふみんアイでの反転した盤面を作る
             ban = self.ban[::-1]
@@ -270,14 +272,14 @@ class Board:
                     char = piece[reverse_piece[pos]][1]
                     if kato123:
                         if pos % 2:
-                            plt.text(-0.89 - j, -0.75 - i, char, fontsize = 24, rotation = 0, fontproperties=fp)
+                            self.__plt_text(-0.50 - j, -0.50 - i, char)
                         else:
-                            plt.text(-0.96 - j, - 0.55 - i, char, fontsize = 24, rotation = 180, fontproperties=fp)
+                            self.__plt_text(-0.60 - j, - 0.30 - i, char, 180)
                     else:
                         if pos % 2: # 後手の駒
-                            plt.text(-0.96 - j, - 0.55 - i, char, fontsize = 24, rotation = 180, fontproperties=fp)
+                            self.__plt_text(-0.60 - j, - 0.30 - i, char, 180)
                         else: # 先手の駒
-                            plt.text(-0.89 - j, -0.75 - i, char, fontsize = 24, rotation = 0, fontproperties=fp)
+                            self.__plt_text(-0.50 - j, -0.50 - i, char)
 
     def __get_koma_b_string(self, koma):
         temp = ""
