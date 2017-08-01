@@ -27,29 +27,30 @@ class Engine:
         self.fw = open(self.temp, 'a') # 標準出力用にファイルを書き込みで開く
         self.fr = open(self.temp, 'r') # 読み込みでファイルを開く
         self.stat = os.stat(self.temp) # ファイルの情報を取得
-        self.__dprint(self.stat.st_mtime)
+        self.__dprint(f"size={self.stat.st_size}")
         self.p = subprocess.Popen(self.engine_cmd, stdin=subprocess.PIPE, stdout=self.fw, stderr=subprocess.PIPE, universal_newlines=True)
         # usiコマンドとその応答確認
         self.__stdin('usi')
-        if not self.__polling_file(1, 1, 10):
+        if not self.__polling_file(0.05, 0.3, 5):
             self.__kill()
-            return
+            return False
         if not self.__check_usi(self.get_stdout_lines()):
             self.__kill()
-            return
-        
+            return False
+
         # エンジンにオプションセット用のコマンド列を送る
         self.__setopt()
 
         # isreadyコマンドとその応答確認
         self.__stdin('isready')
-        if not self.__polling_file(2, 1, 10):
+        if not self.__polling_file(0.05, 0.5, 10):
             self.__kill()
-            return
+            return False
         if not self.__check_isready(self.get_stdout_lines()):
             self.__kill()
-            return
-    
+            return False
+        return True
+
     # オプションをセットする
     def __setopt(self):
         for option in self.option:
@@ -59,8 +60,9 @@ class Engine:
     # 標準出力ファイルが更新されたかを確認する
     def __is_update_stdout(self):
         new_stat = os.stat(self.temp) # 現在のファイル情報を取得
-        if self.stat.st_mtime != new_stat.st_mtime: # タイムスタンプが異なれば更新されたということ
-            self.stat = new_stat # タイムスタンプを最新のものにする
+        if self.stat.st_size != new_stat.st_size: # ファイルサイズが異なれば更新されたということ
+            self.stat = new_stat # ファイル情報を最新のものにする
+            self.__dprint(f"size={new_stat.st_size}")
             self.__dprint("ファイルが更新されました")
             return True
         return False
@@ -76,7 +78,7 @@ class Engine:
         # タイムアウト
         self.__dprint("ファイルの更新を確認できませんでした")
         return False
-    
+
     # usiコマンドの結果を確認する
     def __check_usi(self, usi):
         for l in usi:
@@ -85,9 +87,9 @@ class Engine:
                 print(f"USIコマンド： OK")
                 return True
             elif ls[0:8] == "id name ":
-                print(f"IDは「{ls[8:]}」")
+                print(f"ID:「{ls[8:]}」")
             elif ls[0:13] == "id author by ":
-                print(f"authorは「{ls[13:]}」")
+                print(f"author:「{ls[13:]}」")
         self.__dprint("usiokを確認できませんでした")
         return False
 
@@ -119,13 +121,13 @@ class Engine:
         self.__stdin(sfen)
         s = "go btime " + str(time_) + " wtime " + str(time_)
         self.__stdin(s)
-        if not self.__polling_file(1, 1, 10):
+        if not self.__polling_file(2, 1, 10):
             self.__kill()
             return
         if not self.__check_go(self.get_stdout_lines()):
             self.__kill()
             return
-    
+
     def get_stdout_lines(self):
         return self.fr.readlines()
 
