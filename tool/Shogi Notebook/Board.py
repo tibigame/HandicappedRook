@@ -102,6 +102,7 @@ class Board:
             "P": 0
         }
 
+    # 手数カウント周り
     def get_count(self):
         return str(self.count)
 
@@ -109,6 +110,11 @@ class Board:
         self.count = int(count)
         return
 
+    def inc_count(self, count=0):
+        self.count += 1
+        return
+
+    # 手番周り
     def get_teban(self): # 手番を返す b(先手) or w(後手)
         return self.teban
 
@@ -117,9 +123,9 @@ class Board:
             self.teban = new_teban
         else:
             if self.teban == "b":
-                self.teban == "w"
+                self.teban = "w"
             else:
-                self.teban == "b"
+                self.teban = "b"
 
     def get_sfen_ban(self): # Boardクラスからsfen形式の盤面文字列を生成する
         sfen = ""
@@ -223,6 +229,189 @@ class Board:
         self.set_sfen_koma(sfen_list[3])
         self.set_teban(sfen_list[2])
         self.set_count(sfen_list[4])
+
+    # 持ち駒のチェック：pieceの駒をnum枚以上持っているか
+    def has(self, piece, num=1):
+        if self.koma[piece] >= num:
+            return True
+        return False
+
+    # 盤面のチェックを書く
+    # 盤面の駒値を返す
+    def get_num(self, pos):
+        print(f"pos={pos}")
+        return self.ban[pos[1] - 1][pos[0] - 1]
+    # マス目が空かどうか
+    def is_space(self, pos):
+        return self.get_num(pos) == 0
+    # 先手の駒か
+    def is_black_piece(self, pos):
+        num = self.get_num(pos)
+        if num & 1: # 後手の駒
+            return False
+        elif num != 0: # 先手の駒
+            return True
+        return False # 空マス
+    # 後手の駒か
+    def is_white_piece(self, pos):
+        num = self.get_num(pos)
+        if num & 1: # 後手の駒
+            return True
+        return False # 先手の駒 か 空マス
+    # 成り駒か
+    def is_promote(self, pos):
+        if self.get_num(pos) % 4 >= 2:
+            return True
+        return False
+    # 玉か
+    def is_king(self, pos):
+        num = self.get_num(pos)
+        if num == 2**2 or num == 2**2 + 1:
+            return True
+        return False
+    # 駒の先後を反転した値を返す
+    def calc_reverse_num(self, num):
+        if num == 0:
+            raise ValueError("駒の先後反転を空マスに適用しようとしました")
+        if num & 1: # 後手の駒はmod2==1なので1を引く
+            return num -1
+        return num + 1  # 先手の駒はmod2==0なので1を足す
+    def get_reverse_num(self, pos):
+        return calc_reverse_num(self.get_num(pos))
+
+    # 駒を成った値を返す
+    def get_promoted_num(self, pos):
+        num = self.get_num(pos)
+        if num == 0:
+            raise ValueError("駒の成りを空マスに適用しようとしました")
+        if num == 2**2 or num == 2**2 + 1 or num == 2**14 or num == 2**14 + 1:
+            raise ValueError("駒の成りを成れない駒に適用しようとしました")
+        if num % 4 >= 2:
+            raise ValueError("駒の成りを既に成っている駒に適用しようとしました")
+        return num + 2  # 成り駒は素の駒に2を足したもの
+    # 駒の素の値を返す(成り駒も成る前の値)
+    def get_raw_num(self, pos):
+        num = self.get_num(pos)
+        if num % 4 >= 2:
+            return num - 2 # 成り駒は2を引いておく
+        return num
+    # 玉が右か左か
+    # 飛、角の位置
+
+    # USIプロトコルの指し手文字列を分析します。
+    def __analize_move(self, move_string):
+        def int_to_file(char):
+            if(char == "1"):
+                return 1
+            elif(char == "2"):
+                return 2
+            elif(char == "3"):
+                return 3
+            elif(char == "4"):
+                return 4
+            elif(char == "5"):
+                return 5
+            elif(char == "6"):
+                return 6
+            elif(char == "7"):
+                return 7
+            elif(char == "8"):
+                return 8
+            elif(char == "9"):
+                return 9
+            else:
+                raise ValueError("行は1-9で指定する必要があります：" + char)
+
+        def char_to_rank(char):
+            if(char == "a"):
+                return 1
+            elif(char == "b"):
+                return 2
+            elif(char == "c"):
+                return 3
+            elif(char == "d"):
+                return 4
+            elif(char == "e"):
+                return 5
+            elif(char == "f"):
+                return 6
+            elif(char == "g"):
+                return 7
+            elif(char == "h"):
+                return 8
+            elif(char == "i"):
+                return 9
+            else:
+                raise ValueError("段はa-iで指定する必要があります：" + char)
+
+        m_l = list(move_string)
+        # 持ち駒を打つ
+        if(m_l[0] == "R" or m_l[0] == "B" or m_l[0] == "G" or m_l[0] == "S" or m_l[0] == "N" or m_l[0] == "L" or m_l[0] == "P"):
+            peace = m_l[0]
+            if m_l[1] != "*":
+                raise ValueError("駒を打つときの2文字目は*である必要があります")
+            pos = (int_to_file(m_l[2]), char_to_rank(m_l[3]))
+            return ("place", peace, pos)
+        # 盤上の駒を動かす
+        pos = (int_to_file(m_l[0]), char_to_rank(m_l[1]))
+        moved = (int_to_file(m_l[2]), char_to_rank(m_l[3]))
+        if len(m_l) >= 5 and m_l[4] == "+":
+            is_promote = True
+        else:
+            is_promote = False
+        return ("move", pos, moved, is_promote)
+
+    # USIプロトコルの指し手を与えて実行します。駒の動きの正当性のチェックはしません。
+    def move(self, move_string):
+        m = self.__analize_move(move_string)
+        if m[0] == "move":
+            # 起点の座標が自分の駒か
+            if self.get_teban() == "b":
+                if not self.is_black_piece(m[1]):
+                    raise ValueError("先手の手番で先手の駒以外を動かそうとしました")
+            else:
+                if not self.is_white_piece(m[1]):
+                    raise ValueError("後手の手番で後手の駒以外を動かそうとしました")
+            # 終点の座標が空か
+            if self.is_space(m[2]):
+                get_piece = False
+            # 終点の座標が相手の駒か
+            elif self.get_teban() == "b" and self.is_white_piece(m[2]):
+                get_piece = self.calc_reverse_num(self.get_raw_num(m[2]))
+            elif self.get_teban() == "w" and self.is_black_piece(m[2]):
+                get_piece = self.calc_reverse_num(self.get_raw_num(m[2]))
+            else:
+                raise ValueError("自分の駒がある位置に動かそうとしました")
+            if self.is_king(m[2]):
+                raise ValueError("玉を捕獲しようとしました")
+            # 駒を動かす
+            if m[3]: # 駒を成る場合
+                self.ban[m[2][1] - 1][m[2][0] - 1] = self.get_promoted_num(m[1])
+            else: # 通常の場合
+                self.ban[m[2][1] - 1][m[2][0] - 1] = self.ban[m[1][1] - 1][m[1][0] - 1]
+            self.ban[m[1][1] - 1][m[1][0] - 1] = 0
+            # 駒を取得する
+            if get_piece:
+                self.koma[dec_piecenum(get_piece)] += 1
+
+        elif m[0] == "place":
+            # 指し手は駒種しか入っていないので後手番なら小文字にする
+            if self.get_teban() == "w":
+                p = m[1].lower()
+            else:
+                p = m[1]
+            # 駒が打てるかのチェック
+            if not self.has(p):
+                raise ValueError("指定された駒を持っていません")
+            if not self.is_space(m[2]):
+                raise ValueError("駒を打つ場所が空ではありません")
+            self.koma[p] -= 1 # 駒台から駒を1つ減らす
+            self.ban[m[2][1] - 1][m[2][0] - 1] = piece[m[1]][0] # 盤面に駒を置く
+        else:
+            raise ValueError("想定されたmoveではありません")
+        self.set_teban("r") # 指し手が進んだので手番変更
+        self.inc_count() # 手数カウントを1増やしておく
+        return
 
     def __plot_common(self, plt):
         one = np.ones(9)
