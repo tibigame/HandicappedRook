@@ -189,7 +189,6 @@ class Board:
     # 盤面のチェックを書く
     # 盤面の駒値を返す
     def get_num(self, pos):
-        print(f"pos={pos}")
         return self.ban[pos[1] - 1][pos[0] - 1]
     # マス目が空かどうか
     def is_space(self, pos):
