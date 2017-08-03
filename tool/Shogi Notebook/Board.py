@@ -2,71 +2,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 fp = FontProperties(fname=r'C:\Windows\Fonts\ipaexg.ttf', size=24)
+from Bitboard import piece
+from Bitboard import reverse_piece
+from Bitboard import get_pos
+from Bitboard import B_BLACK, B_WHITE
 
 row = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九",
           "十", "十一", "十二", "十三", "十四", "十五", "十六", "十七", "十八"]
 colmun = ["０", "１", "２", "３", "４", "５", "６", "７", "８", "９"]
-# 後手は+1 成りは+2にする
-piece = {
-    "k": [2**2 + 1, "王"],
-    "r": [2**6 + 1, "飛"],
-    "+r": [2**6 + 3, "龍"],
-    "b": [2**10 + 1, "角"],
-    "+b": [2**10 + 3, "馬"],
-    "g": [2**14 + 1, "金"],
-    "s": [2**18 + 1, "銀"],
-    "+s": [2**18 + 3, "全"],
-    "n": [2**22 + 1, "桂"],
-    "+N": [2**22 + 3, "圭"],
-    "l": [2**26 + 1, "香"],
-    "+l": [2**26 + 3, "杏"],
-    "p": [2**30 + 1, "歩"],
-    "+p": [2**30 + 3, "と"],
-    "K": [2**2, "玉"],
-    "R": [2**6, "飛"],
-    "+R": [2**6 + 2, "龍"],
-    "B": [2**10, "角"],
-    "+B": [2**10 + 2, "馬"],
-    "G": [2**14, "金"],
-    "S": [2**18, "銀"],
-    "+S": [2**18 + 2, "全"],
-    "N": [2**22, "桂"],
-    "+N": [2**22 + 2, "圭"],
-    "L": [2**26, "香"],
-    "+L": [2**26 + 2, "杏"],
-    "P": [2**30, "歩"],
-    "+P": [2**30 + 2, "と"]
-}
-reverse_piece = {
-    2**2 + 1: "k",
-    2**6 + 1: "r",
-    2**6 + 3: "+r",
-    2**10 + 1: "b",
-    2**10 + 3: "+b",
-    2**14 + 1: "g",
-    2**18 + 1: "s",
-    2**18 + 3: "+s",
-    2**22 + 1: "n",
-    2**22 + 3: "+n",
-    2**26 + 1: "l",
-    2**26 + 3: "+l",
-    2**30 + 1: "p",
-    2**30 + 3: "+p",
-    2**2: "K",
-    2**6: "R",
-    2**6 + 2: "+R",
-    2**10: "B",
-    2**10 + 2: "+B",
-    2**14: "G",
-    2**18: "S",
-    2**18 + 2: "+S",
-    2**22: "N",
-    2**22 + 2: "+N",
-    2**26: "L",
-    2**26 + 2: "+L",
-    2**30: "P",
-    2**30 + 2: "+P"
-}
 
 def dec_piecenum(piecenum): #駒の数字から駒文字に変更する
     mod = piecenum % 4
@@ -78,10 +21,17 @@ def dec_piecenum(piecenum): #駒の数字から駒文字に変更する
         promote = "+"
     return promote + reverse_piece[piece_base]
 
+# 駒インデックスのタプルから符号リストに変換します
+def conv_pos_taple(p):
+    result = []
+    for (x, y) in zip(p[0], p[1]):
+        result.append((y + 1, x + 1)) # インデックスと符号は1ずれる
+    return result
+
 class Board:
     # コンストラクタ
     def __init__(self, sfen):
-        self.ban = np.zeros([9, 9], "int32") # インデックスと符号は1つずれるので注意
+        self.ban = np.zeros([9, 9], "int8") # インデックスと符号は1つずれるので注意
         self.set_sfen(sfen)
 
     def __clear_koma(self): # 駒台を空にする
@@ -295,9 +245,60 @@ class Board:
         if num % 4 >= 2:
             return num - 2 # 成り駒は2を引いておく
         return num
-    # 玉が右か左か
-    # 飛、角の位置
 
+    # 駒のインデックスのタプルを返す
+    def get_pos(self, p):
+        return get_pos(p, self.ban)
+    # 駒の符号を返す(無い場合は0、複数ある場合は1つ目)
+    def get_x_pos1(self, p):
+        r = conv_pos_taple(self.get_pos(p))
+        if len(r) == 0:
+            return 0
+        return r[0]
+    # 駒の符号を返す(無い場合は0、複数ある場合はリストを返す)
+    def get_x_pos2(self, p):
+        r = conv_pos_taple(self.get_pos(p))
+        if len(r) == 0:
+            return 0
+        return r
+
+    # 玉の位置(玉は必ずある。stay=5筋、right=右側、left=左側、middle=中段、nyugyoku=敵陣)
+    def is_k_stay(self):
+        return self.get_pos("k")[1][0] == 4
+    def is_K_stay(self):
+        return self.get_pos("K")[1][0] == 4
+    def is_k_right(self):
+        return self.get_pos("k")[1][0] > 4
+    def is_k_left(self):
+        return self.get_pos("k")[1][0] < 4
+    def is_K_right(self):
+        return self.get_pos("K")[1][0] < 4
+    def is_K_left(self):
+        return self.get_pos("K")[1][0] > 4
+    def is_k_middle(self):
+        y = self.get_pos("k")[0][0]
+        return y >= 3 and y <= 5
+    def is_K_middle(self):
+        y = self.get_pos("K")[0][0]
+        return y >= 3 and y <= 5
+    def is_k_nyugyoku(self):
+        return self.get_pos("k")[0][0] >= 6
+    def is_K_nyugyoku(self):
+        return self.get_pos("K")[0][0] <= 2
+
+    # 盤上の駒の枚数をカウントする
+    def count_piece(self, p, enemy_field=False):
+        return len(self.ban[self.ban == piece[p][0]])
+    def count_b(self): # 先手の駒
+        return len(self.ban[np.logical_and(self.ban % 2 == 0, self.ban != 0)]) # 偶数かつ0以外
+    def count_w(self, bitboard=False): # 後手の駒
+        return len(self.ban[self.ban % 2 == 1]) # 奇数
+    def count_b_bitboard(self, bitboard): # 先手の駒をbitboardの場所でのみカウントする
+        ban = np.where(self.ban & bitboard, self.ban, 0)
+        return len(ban[np.logical_and(ban % 2 == 0, ban != 0)])
+    def count_w_bitboard(self, bitboard): # 後手の駒をbitboardの場所でのみカウントする
+        ban = np.where(self.ban & bitboard, self.ban, 0)
+        return len(ban[ban % 2 == 1])
     # USIプロトコルの指し手文字列を分析します。
     def __analize_move(self, move_string):
         def int_to_file(char):
