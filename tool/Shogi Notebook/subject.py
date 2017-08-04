@@ -241,6 +241,35 @@ other = {
     'パックマン': 'packman'
 }
 
+mate_basic = {
+    '0': 'sfen 7+rk/7bl/9/9/9/9/9/9/9 b Nrb4g4s3n3l18p 1',
+    '1': 'sfen 9/9/3pp4/+r2k1p3/2L1+p4/2+R6/B8/B8/9 b 4g4s4n3l14p 1',
+    '2': 'sfen 6r2/6Sl1/5p3/4P1k1N/4s1B2/5RL2/7pL/4b1N2/6L2 b 4g2s2n15p 1',
+    '3': 'sfen 6S2/5nnnk/9/8N/7S1/9/9/+r8/+r8 b 2B4g2s4l18p 1',
+    '4': 'sfen 5R1nl/5Bsk1/7p1/8p/9/9/9/9/9 b GSrb3g2s3n3l16p 1',
+    '5': 'sfen 4k4/9/9/9/9/4K4/9/9/9 b 2R2G2b2g4s4n4l18p 1'
+    '6': 'sfen 9/5s2B/5pkP1/7p1/6l2/4R3p/9/9/9 b BSPr4g2s4n3l13p 1',
+    '7': 'sfen 8l/8k/6RPb/5K3/9/9/9/9/9 b SPrb4g3s4n3l16p 1',
+    '8': 'sfen 9/9/1g1l5/2G1l4/gl6B/gk7/1s1S5/lSpKS4/4Br3 b R4n17p 1',
+    '9': 'sfen 5l1+PS/5p1Pk/8p/5R1B+p/9/6N2/9/9/9 b BSr4g2s3n3l13p 1'
+}
+mate_ex = {
+    '0': 'sfen g1+P1k1+P+P+L/1p3P3/+R+p2pp1pl/1NNsg+p2+R/+b+nL+P1+p3/1P3ssP1/2P1+Ps2N/4+P1P1L/+B5G1g b - 1', # ミクロコスモス
+    '1': 'sfen 9/9/9/9/4R2N1/3+BSG1R1/9/5G3/2Pk1S3 b b2g2s3n4l17p 1', # 詰将棋選手権：チャンピオン戦から
+    '2': 'sfen 2Gp1n3/2r3G2/p1+L1S1S2/1pp+Bp1ppp/1k2l3n/5p3/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1', # 攻方実戦初形
+    '3': 'sfen bp1pppk2/g1+P6/2N5g/PR5PP/p2P4+P/1NS4p1/2S6/N2sSNp+pg/2+p2BG1r b 3Ll3p 1', # ベンハー
+    '4': 'sfen +P1+Pgg2+P1/1+nP1+P2+sP/1p2N2l+P/+PP+P1P1+Pp1/3n2b2/1+P+p1B2r1/2+p3K1N/1+PS1L1G+ls/2L2kS+Rg b - 1', # 双玉還元玉煙詰
+    '5': 'sfen 1+P1pS2+PR/2n2S1lg/1l3p1p1/1G2n1pS1/N1p2k3/3S2l2/4K1lgP/3P1+p2p/4Pg1PN b BPrb4p 1', # 最後の審判
+    '6': 'sfen 3pl3p/1+Pn3pk1/2+p6/4+pG3/1K3p2P/+B5l1+B/+p3pS1+ll/p+p2PN3/3S1+sSPN b 2R2P3gn2p 1', # 木星の旅
+    '7': 'sfen p2+N3g1/P2R3+pP/g3+BnpP1/lPP1+p3p/+LnnS2+LS+p/G+P1l+Bp+P1+p/3pp1P1g/9/4kSR1s b - 1', # 新桃源郷
+    '8': 'sfen 9/5lPS+p/4SnpS+p/1+P2+P2pg/2+P+PL4/lppp1pBk1/r3p3N/3GsR3/+p2G1NKP1 b B2Pgnl 1', # 特異点
+    '9': 'sfen 1p3p3/4gP1p1/3+Pp1nl+p/5+P+NlN/+p1Bs1sGlG/3+RS2ln/2Gp+p1k1b/2P+RS2Pp/P4+p3 b 2P 1' # 幻想飛行
+}
+mate = {
+    '通常': mate_basic,
+    '高難度': mate_ex
+}
+
 test = {
     '羽生 加藤 52銀': 'sfen ln1g5/1r2S1k2/p2pppn2/2ps2p2/1p7/2P6/PPSPPPPLP/2G2K1pr/LN4G1b w BGSLPnp 62',
     '羽生 三浦 86飛': 'sfen l6nl/2B3gk1/p2gp1sp1/5pp1p/6P2/1rP4PP/PpSGP2sR/L8/KNGs3+bL b N4Pnp 69',
@@ -278,9 +307,11 @@ start = {
     '飛右香': 'sfen 1nsgkgsnl/7b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1',
     '角香': 'sfen lnsgkgsn1/1r7/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1',
     '角右香': 'sfen 1nsgkgsnl/1r7/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1',
+    '２枚': 'sfen lnsgkgsnl/9/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1',
     '４枚': 'sfen 1nsgkgsn1/9/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1',
     '６枚': 'sfen 2sgkgs2/9/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1',
     '８枚': 'sfen 3gkg3/9/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1',
+    '後手飛角逆': 'sfen lnsgkgsnl/1b5r1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1',
     '５三歩': 'sfen lnsgkgsnl/1r5b1/pppp1pppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1',
     '５七と': 'sfen lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPP+PPPPP/1B5R1/LNSGKGSNL b - 1',
     '先手飛': 'sfen lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b R 1',
@@ -314,5 +345,6 @@ subject = {
     '一手損角換わり': kakugawari_tezon,
     '矢倉': yagura,
     'その他': other,
+    '詰将棋': mate
     'test': test
 }
