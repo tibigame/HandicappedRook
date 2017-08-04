@@ -247,7 +247,7 @@ mate_basic = {
     '2': 'sfen 6r2/6Sl1/5p3/4P1k1N/4s1B2/5RL2/7pL/4b1N2/6L2 b 4g2s2n15p 1',
     '3': 'sfen 6S2/5nnnk/9/8N/7S1/9/9/+r8/+r8 b 2B4g2s4l18p 1',
     '4': 'sfen 5R1nl/5Bsk1/7p1/8p/9/9/9/9/9 b GSrb3g2s3n3l16p 1',
-    '5': 'sfen 4k4/9/9/9/9/4K4/9/9/9 b 2R2G2b2g4s4n4l18p 1'
+    '5': 'sfen 4k4/9/9/9/9/4K4/9/9/9 b 2R2G2b2g4s4n4l18p 1',
     '6': 'sfen 9/5s2B/5pkP1/7p1/6l2/4R3p/9/9/9 b BSPr4g2s4n3l13p 1',
     '7': 'sfen 8l/8k/6RPb/5K3/9/9/9/9/9 b SPrb4g3s4n3l16p 1',
     '8': 'sfen 9/9/1g1l5/2G1l4/gl6B/gk7/1s1S5/lSpKS4/4Br3 b R4n17p 1',
@@ -345,6 +345,6 @@ subject = {
     '一手損角換わり': kakugawari_tezon,
     '矢倉': yagura,
     'その他': other,
-    '詰将棋': mate
+    '詰将棋': mate,
     'test': test
 }
