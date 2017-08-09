@@ -362,7 +362,7 @@ class Board:
         return ("move", pos, moved, is_promote)
 
     # USIプロトコルの指し手を与えて実行します。駒の動きの正当性のチェックはしません。
-    def move(self, move_string):
+    def move(self, move_string, detail_kif=False):
         m = self.__analize_move(move_string)
         if m[0] == "move":
             # 起点の座標が自分の駒か
@@ -385,6 +385,13 @@ class Board:
             if self.is_king(m[2]):
                 raise ValueError("玉を捕獲しようとしました")
             # 駒を動かす
+            # 詳細な棋譜表記生成
+            if detail_kif:
+                detail = colmun(m[2][0]) + row(m[2][1])
+                detail += dec_piecenum(self.ban[m[1][1] - 1][m[1][0] - 1])
+                 # TODO 上下寄右左などの条件を作成する必要がある
+                if m[3]: # TODO 不成の条件を作成する必要がある
+                    detail += "成"
             if m[3]: # 駒を成る場合
                 self.ban[m[2][1] - 1][m[2][0] - 1] = self.get_promoted_num(m[1])
             else: # 通常の場合
@@ -407,10 +414,17 @@ class Board:
                 raise ValueError("駒を打つ場所が空ではありません")
             self.koma[p] -= 1 # 駒台から駒を1つ減らす
             self.ban[m[2][1] - 1][m[2][0] - 1] = piece[m[1]][0] # 盤面に駒を置く
+            # 詳細な棋譜表記生成
+            if detail_kif:
+                detail = colmun(m[2][0]) + row(m[2][1])
+                detail += piece(p)
+                detail += "打" # TODO 打が入る条件を作成する必要がある
         else:
             raise ValueError("想定されたmoveではありません")
         self.set_teban("r") # 指し手が進んだので手番変更
         self.inc_count() # 手数カウントを1増やしておく
+        if detail_kif:
+            return detail
         return
 
     def __plot_common(self, plt):
@@ -523,3 +537,44 @@ class Board:
         if pre:
             plt.fill_between((pre[0] - 10, pre[0] - 9), pre[1] - 10, pre[1] - 9, color='#97fef1')
         plt.show()
+
+
+# sfen形式の棋譜を扱うクラス(予定)
+kifu_option_test = {
+    "title": "",
+    "black_name": "",
+    "white_name": "",
+    "teai": "",
+    "comment": "",
+    "debug": ""
+}
+class Kifu:
+    # コンストラクタ
+    def __init__(self, sfen):
+        self.startBoard = Board(sfen) # 初期局面(固定)
+        self.nowBoard = Board(sfen) # 現局面
+        self.movelist = [] # 棋譜
+
+    # 棋譜のオプションをセットする
+    def set_option(self, option):
+        self.title = option["title"]
+        self.black_name = option["black_name"]
+        self.white_name = option["white_name"]
+        self.teai = option["teai"]
+        self.comment = option["comment"]
+        self.debug = option["debug"]
+
+    # 手数を返す
+    def get_tesuu(self):
+        return len(self.movelist)
+
+    def set_sfen(self, sfen):
+        self.sfen = sfen
+
+    def get_sfen(self):
+        return self.sfen
+
+    def move(self, m):
+        self.nowBoard.move(m) # 現局面を動かす
+        self.movelist.append(m) # 棋譜に追加
+        return
