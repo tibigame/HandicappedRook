@@ -20,6 +20,26 @@ class Engine:
     def __stdin(self, cmd):
         print(cmd, file=self.p.stdin, flush=True)
 
+    # オプションをセットする
+    def __setopt(self):
+        for option in self.option:
+            self.__stdin(option)
+        self.__dprint("オプションをセットしました")
+
+    # コマンドの実行と確認
+    def __exe_and_check_cmd(self, cmd: str, check, polling, times=1, kill=True):
+        self.__stdin(cmd)
+        l = 0
+        while True:
+            l += 1
+            if self.__polling_file(polling[0], polling[1], polling[2]): # ファイルが更新されたら
+                if check(self.get_stdout_lines()): # ファイルを読みに行って結果をチェックルーチンに渡す
+                    return True # 成功
+            if l >= times: # 規定回数のループで成功しなかった
+                if kill: # killフラグがTrueのときは失敗時にkill処理を実行する
+                    self.__kill()
+                return False
+
     # エンジンの初期化
     def init_engine(self):
         if os.path.isfile(self.temp): #tempファイルの存在確認
@@ -30,32 +50,14 @@ class Engine:
         self.__dprint(f"size={self.stat.st_size}")
         self.p = subprocess.Popen(self.engine_cmd, stdin=subprocess.PIPE, stdout=self.fw, stderr=subprocess.PIPE, universal_newlines=True)
         # usiコマンドとその応答確認
-        self.__stdin('usi')
-        if not self.__polling_file(0.05, 0.3, 5):
-            self.__kill()
-            return False
-        if not self.__check_usi(self.get_stdout_lines()):
-            self.__kill()
+        if not self.__exe_and_check_cmd("usi", self.__check_usi, (0.05, 0.3, 5)):
             return False
 
         # エンジンにオプションセット用のコマンド列を送る
         self.__setopt()
 
         # isreadyコマンドとその応答確認
-        self.__stdin('isready')
-        if not self.__polling_file(0.05, 0.5, 10):
-            self.__kill()
-            return False
-        if not self.__check_isready(self.get_stdout_lines()):
-            self.__kill()
-            return False
-        return True
-
-    # オプションをセットする
-    def __setopt(self):
-        for option in self.option:
-            self.__stdin(option)
-        self.__dprint("オプションをセットしました")
+        return self.__exe_and_check_cmd("isready", self.__check_isready, (0.05, 0.5, 10), 10, True)
 
     # 標準出力ファイルが更新されたかを確認する
     def __is_update_stdout(self):
@@ -117,19 +119,40 @@ class Engine:
                 return True
         return False
 
-    def sfen_think(self, sfen, time_):
+    def go_think(self, sfen, time_):
         self.__stdin(sfen)
         s = "go btime " + str(time_) + " wtime " + str(time_)
-        self.__stdin(s)
-        if not self.__polling_file(2, 1, 10):
-            self.__kill()
-            return
-        if not self.__check_go(self.get_stdout_lines()):
-            self.__kill()
-            return
+        self.__exe_and_check_cmd(s, self.__check_go, (2, 1, 10), 10)
+
+    # 深さベースの思考。time_refは参考思考時間
+    def go_depth(self, sfen, depth, time_ref=5):
+        self.__stdin(sfen)
+        s = "go depth {str(depth)}"
+        self.__exe_and_check_cmd(s, self.__check_go, (1, time_ref, 10), 10)
+
+    # time_秒間詰将棋を考える
+    def go_mate(self, sfen, time_):
+        self.__stdin(sfen)
+        s = f"go mate {str(time_ * 1000)}"
+        self.__exe_and_check_cmd(s, self.__check_go, (1, 1, time_), 10)
+
+    # benchコマンドとその応答確認
+    def bench(self):
+        self.__exe_and_check_cmd("bench 1024 1 10 default depth", self.__check_bench, (10, 1, 10), 1, True)
+
+    # benchコマンドの結果を確認する
+    def __check_bench(self, bench):
+        for l in bench:
+            ls = l[:-1]
+            print(ls)
+        return True
 
     def get_stdout_lines(self):
         return self.fr.readlines()
+
+    # エンジンの思考停止
+    def stop(self):
+        self.__stdin('stop')
 
     # エンジンの終了とファイルのクローズ
     def quit(self):
