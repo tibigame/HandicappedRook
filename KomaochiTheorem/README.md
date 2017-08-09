@@ -75,7 +75,7 @@
 (飛車以降はレート差が離れすぎていることもあって色々と怪しいので参考程度に)
 
 詳細な結果は→https://github.com/tibigame/HandicappedRook/blob/master/KomaochiTheorem/result.csv  
-棋譜は→(準備中)  
+棋譜は→https://drive.google.com/file/d/0BwUOadFWQqvjdWUtQkJRNWhNakU/view?usp=sharing  
 棋譜は6コア6スレ3秒 または 4コア4スレ5秒相当の対局です。
 
 |手合い|98.76下限|減少R|98.76上限|対局数|
