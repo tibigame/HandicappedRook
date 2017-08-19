@@ -63,6 +63,9 @@ class Engine:
     def usinewgame(self):
         self.__stdin("usinewgame")
 
+    def gameover(self, param="draw"):
+        self.__stdin("gameover " + param)
+
     # 標準出力ファイルが更新されたかを確認する
     def __is_update_stdout(self):
         new_stat = os.stat(self.temp) # 現在のファイル情報を取得
@@ -124,6 +127,7 @@ class Engine:
         return (False, False)
 
     def go_think(self, sfen, time_):
+        self.__dprint(sfen)
         self.__stdin(sfen)
         s = "go btime " + str(time_) + " wtime " + str(time_)
         return self.__exe_and_check_cmd(s, self.__check_go, (2, 1, 10), 10)

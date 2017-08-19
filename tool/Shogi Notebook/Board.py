@@ -368,9 +368,13 @@ class Board:
             # 起点の座標が自分の駒か
             if self.get_teban() == "b":
                 if not self.is_black_piece(m[1]):
+                    print(self.get_sfen())
+                    print(f"{m[1]}→{m[2]}")
                     raise ValueError("先手の手番で先手の駒以外を動かそうとしました")
             else:
                 if not self.is_white_piece(m[1]):
+                    print(self.get_sfen())
+                    print(f"{m[1]}→{m[2]}")
                     raise ValueError("後手の手番で後手の駒以外を動かそうとしました")
             # 終点の座標が空か
             if self.is_space(m[2]):
@@ -381,8 +385,12 @@ class Board:
             elif self.get_teban() == "w" and self.is_black_piece(m[2]):
                 get_piece = self.calc_reverse_num(self.get_raw_num(m[2]))
             else:
+                print(self.get_sfen())
+                print(f"{m[1]}→{m[2]}")
                 raise ValueError("自分の駒がある位置に動かそうとしました")
             if self.is_king(m[2]):
+                print(self.get_sfen())
+                print(f"{m[1]}→{m[2]}")
                 raise ValueError("玉を捕獲しようとしました")
             # 駒を動かす
             # 詳細な棋譜表記生成
@@ -413,7 +421,7 @@ class Board:
             if not self.is_space(m[2]):
                 raise ValueError("駒を打つ場所が空ではありません")
             self.koma[p] -= 1 # 駒台から駒を1つ減らす
-            self.ban[m[2][1] - 1][m[2][0] - 1] = piece[m[1]][0] # 盤面に駒を置く
+            self.ban[m[2][1] - 1][m[2][0] - 1] = piece[p][0] # 盤面に駒を置く
             # 詳細な棋譜表記生成
             if detail_kif:
                 detail = colmun(m[2][0]) + row(m[2][1])
@@ -550,9 +558,10 @@ kifu_option_test = {
 }
 class Kifu:
     # コンストラクタ
-    def __init__(self, sfen):
+    def __init__(self, sfen="sfen lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"):
         self.startBoard = Board(sfen) # 初期局面(固定)
         self.nowBoard = Board(sfen) # 現局面
+        self.position_ = "position " + sfen + " moves " # position用のsfen
         self.movelist = [] # 棋譜
 
     # 棋譜のオプションをセットする
@@ -568,13 +577,33 @@ class Kifu:
     def get_tesuu(self):
         return len(self.movelist)
 
-    def set_sfen(self, sfen):
-        self.sfen = sfen
-
     def get_sfen(self):
-        return self.sfen
+        return self.position_ + ' '.join(self.movelist)
 
     def move(self, m):
         self.nowBoard.move(m) # 現局面を動かす
         self.movelist.append(m) # 棋譜に追加
         return
+
+# usinewgame済のエンジンを与えると棋譜の現局面から対局を実行する。
+# 対局終了後はisready状態に戻る。
+def battle(black_engine, white_engine, kifu):
+    think_time = 100
+    while kifu.get_tesuu() <= 256:
+        pos = kifu.get_sfen()
+        now_engine = black_engine if kifu.nowBoard.get_teban() == "w" else white_engine
+        bestmove = now_engine.go_think(pos, think_time)[1]
+        if bestmove == "resign": # 投了
+            black_engine.gameover()
+            white_engine.gameover()
+            return kifu
+        if bestmove == "win": # 宣言勝ち
+            black_engine.gameover()
+            white_engine.gameover()
+            return kifu
+        kifu.move(bestmove)
+
+    # 256手超えで引き分け
+    black_engine.gameover()
+    white_engine.gameover()
+    return kifu
