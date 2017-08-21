@@ -578,11 +578,11 @@ kifu_option_test = {
     "debug": ""
 }
 
-def calc_center(list_) -> float:
-    """2変数タプルのリスト列で表現されたデータから重心を求める"""
-    x_  = 0
-    y_  = 0
-    count = len(list_)
+def calc_center(list_: object) -> (float, float):
+    """2変数タプルのリスト列で表現されたデータから重心を求める(ただの平均値)"""
+    x_  = 0.0
+    y_  = 0.0
+    count = float(len(list_))
     for (x, y) in list_:
         x_ += x
         y_ += y
@@ -590,13 +590,15 @@ def calc_center(list_) -> float:
 
 class Kifu:
     # コンストラクタ
-    def __init__(self, sfen="sfen lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"):
+    def __init__(self, sfen="sfen lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1", stat_flag=True):
+        """初期局面を与える。stat_flagは詰将棋など特殊局面で棋譜統計を切りたい時にFalseにする"""
         self.startBoard = Board(sfen) # 初期局面(固定)
         self.nowBoard = Board(sfen) # 現局面
         self.position_ = "position " + sfen + " moves " # position用のsfen
         self.movelist = [] # 棋譜
-
-        self.__init_stat()
+        self.stat_flag = stat_flag
+        if stat_flag:
+            self.__init_stat()
 
     def __init_stat(self):
         """棋譜統計情報の初期化を行います"""
@@ -614,6 +616,7 @@ class Kifu:
         self.stat_move.update(OrderedDict(od_list))
         self.stat_promote_b = 0 # 先手の成りの数
         self.stat_promote_w = 0 # 後手の成りの数
+        self.stat_score_val = [] # 評価値
 
     def set_option(self, option):
         """棋譜のオプションをセットする"""
@@ -631,12 +634,13 @@ class Kifu:
     def get_sfen(self) -> str:
         return self.position_ + ' '.join(self.movelist)
 
-    def move(self, m: str):
+    def move(self, m: str, info=None):
         move_detail = self.nowBoard.move(m) # 現局面を動かす
         self.movelist.append(m) # 棋譜に追加
-        self.__move_stat(move_detail) # 統計情報用の分析を行います
+        if self.stat_flag:
+            self.__move_stat(move_detail, info) # 統計情報用の分析を行います
 
-    def __move_stat(self, m_d):
+    def __move_stat(self, m_d, info):
         if m_d.type == "move": # 盤上の駒が移動する場合
             self.stat_move[m_d.move_piece_str] += 1 # 動かした駒種の統計を更新
 
@@ -681,6 +685,9 @@ class Kifu:
             else: # 後手の指し手
                 self.stat_move['*_w'] += 1 # 動かした駒種の統計を更新
 
+        if info: # infoは送られるなら常に送られることが前提
+            self.stat_score_val.append(info.get_score_val()) # 評価値を追加する
+
     # 統計情報
     def __stat_center_of_K(self): # 先手玉の重心
         return calc_center(self.pass_of_K)
@@ -718,7 +725,8 @@ def battle(black_engine, white_engine, kifu):
     while kifu.get_tesuu() <= 256:
         pos = kifu.get_sfen()
         now_engine = black_engine if kifu.nowBoard.get_teban() == "w" else white_engine
-        bestmove = now_engine.go_think(pos, think_time)[1]
+        go_result = now_engine.go_think(pos, think_time)[1]
+        bestmove = go_result[0]
         if bestmove == "resign": # 投了
             black_engine.gameover()
             white_engine.gameover()
@@ -727,7 +735,9 @@ def battle(black_engine, white_engine, kifu):
             black_engine.gameover()
             white_engine.gameover()
             return kifu
-        kifu.move(bestmove)
+        info_list = go_result[1]
+        info = info_list[-1] if len(info_list) >= 1 else None # 最新のinfoだけを抽出(あれば)
+        kifu.move(bestmove, info)
 
     # 256手超えで引き分け
     black_engine.gameover()

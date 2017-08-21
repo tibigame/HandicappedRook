@@ -54,12 +54,23 @@ class Info:
             elif info_elm == "pv":
                 info_flag = "pv"
                 self.pv = []
-    def get_score(self):
+
+    def get_score(self) -> str:
+        """評価値の文字列かmateを返す"""
         if hasattr(self, "score"):
             return self.score
         if hasattr(self, "mate"):
             return f"mate {self.mate}"
         return "0"
+
+    def get_score_val(self) -> int:
+        """評価値を整数値で返す"""
+        if hasattr(self, "score"):
+            return int(self.score)
+        if hasattr(self, "mate"):
+            m = int(self.mate)
+            return 2**15 if m >= 0 else -2**15
+        return 0
 
 class Engine:
     # コンストラクタ
@@ -71,12 +82,12 @@ class Engine:
         self.__dprint("on")
 
     # デバッグプリント用
-    def __dprint(self, string):
+    def __dprint(self, string: str):
         if self.debug:
             print(f"[Debug] {string}")
 
     # エンジンにコマンド列を送る
-    def __stdin(self, cmd):
+    def __stdin(self, cmd: str):
         print(cmd, file=self.p.stdin, flush=True)
 
     # オプションをセットする
@@ -187,7 +198,7 @@ class Engine:
                 if len(info_list) >= 1:
                     print_str += f" {info_list[-1].get_score()}"
                 print(print_str)
-                return (True, ls_list[1], info_list)
+                return (True, (ls_list[1], info_list))
         return (False, False)
 
     def go_think(self, sfen, time_):
