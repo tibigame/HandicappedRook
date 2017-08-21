@@ -685,8 +685,10 @@ class Kifu:
             else: # 後手の指し手
                 self.stat_move['*_w'] += 1 # 動かした駒種の統計を更新
 
-        if info: # infoは送られるなら常に送られることが前提
-            self.stat_score_val.append(info.get_score_val()) # 評価値を追加する
+        if info:  # infoは送られるなら常に送られることが前提
+            self.stat_score_val.append(info.get_score_val())  # 評価値を追加する
+        elif len(self.stat_score_val) >= 2:  # infoが無かった場合は前の評価値を流用することで代用
+            self.stat_score_val.append(self.stat_score_val[-2])
 
     # 統計情報
     def __stat_center_of_K(self): # 先手玉の重心
@@ -705,6 +707,22 @@ class Kifu:
         return Counter(self.pass_of_R).most_common(1)[0][0]
     def __stat_mode_of_r(self): # 後手飛の最頻値
         return Counter(self.pass_of_r).most_common(1)[0][0]
+    def calc_score_val(self):
+        normal_score_val = self.stat_score_val # 通常の評価値リスト
+        reverse_score_val = [x if i%2 == 0 else -x for (i, x) in enumerate(normal_score_val)] # 後手の評価値を反転して先手から見たものに
+        black_score_val = normal_score_val[0::2] # 先手の評価値だけを切り出したもの
+        white_score_val = normal_score_val[1::2] # 後手の評価値だけを切り出したもの
+        # 先後のエンジンの評価値の差
+        if len(black_score_val) == len(white_score_val):
+            diff_score_val = np.array(black_score_val) + np.array(white_score_val)
+        else:
+            diff_score_val = np.array(black_score_val[:-1]) + np.array(white_score_val)
+        self.normal_score_val = normal_score_val
+        self.reverse_score_val = reverse_score_val
+        self.black_score_val = black_score_val
+        self.white_score_val = white_score_val
+        self.diff_score_val = diff_score_val
+
     def stat(self):
         print(f"手数は{self.get_tesuu()}")
         print(f"先手玉の重心は{self.__stat_center_of_K()}")
