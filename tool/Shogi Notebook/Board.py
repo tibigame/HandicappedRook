@@ -736,6 +736,8 @@ class Kifu:
         self.diff_score_val = diff_score_val
 
     def __stat_score_val(self): # 評価値の統計情報表示
+        if len(self.stat_score_val) <= 2: # 評価値情報がない
+            return False
         self.calc_score_val()
         if self.result == "win": # 先手勝ちの場合
             win_min_val = min(self.black_score_val)
@@ -744,9 +746,10 @@ class Kifu:
             win_min_val = min(self.white_score_val)
             lose_max_val = max(self.black_score_val)
         else:
-            return
+            return True # calc_score_val()は実行した
         print(f"勝った方の最小の評価値は{win_min_val}")
         print(f"負けた方の最大の評価値は{lose_max_val}")
+        return True
 
     def stat(self):
         self.__stat_result()
