@@ -2,6 +2,65 @@ import subprocess
 import time
 import os
 
+class Info:
+    def __init__(self, info_str):
+        info_flag = ""
+        for info_elm in info_str[5:].split(" "):
+            if info_flag == "depth":
+                info_flag = ""
+                self.depth = info_elm
+            elif info_elm == "depth":
+                info_flag = "depth"
+            elif info_flag == "seldepth":
+                info_flag = ""
+                self.seldepth = info_elm
+            elif info_elm == "seldepth":
+                info_flag = "seldepth"
+            elif info_flag == "multipv":
+                info_flag = ""
+                self.multipv = info_elm
+            elif info_elm == "multipv":
+                info_flag = "multipv"
+            elif info_flag == "score":
+                if info_elm == "cp":
+                    info_flag = "cp"
+                else:
+                    info_flag = "mate"
+            elif info_flag == "cp":
+                info_flag = ""
+                self.score = info_elm
+            elif info_flag == "mate":
+                info_flag = ""
+                self.mate = info_elm
+            elif info_elm == "score":
+                info_flag = "score"
+            elif info_flag == "nodes":
+                info_flag = ""
+                self.nodes = info_elm
+            elif info_elm == "nodes":
+                info_flag = "nodes"
+            elif info_flag == "nps":
+                info_flag = ""
+                self.nps = info_elm
+            elif info_elm == "nps":
+                info_flag = "nps"
+            elif info_flag == "time":
+                info_flag = ""
+                self.time = info_elm
+            elif info_elm == "time":
+                info_flag = "time"
+            elif info_flag == "pv":
+                self.pv.append(info_elm)
+            elif info_elm == "pv":
+                info_flag = "pv"
+                self.pv = []
+    def get_score(self):
+        if hasattr(self, "score"):
+            return self.score
+        if hasattr(self, "mate"):
+            return f"mate {self.mate}"
+        return "0"
+
 class Engine:
     # コンストラクタ
     def __init__(self, engine, debug=False):
@@ -116,21 +175,26 @@ class Engine:
 
     # goコマンドの結果を確認する
     def __check_go(self, go):
+        info_list = []
         for l in go:
             ls = l[:-1]
             if ls[0:5] == "info ":
                 self.__dprint(ls[5:])
+                info_list.append(Info(ls))
             elif ls[0:9] == "bestmove ":
                 ls_list = ls.split(" ")
-                print(f"bestmove: {ls_list[1]}")
-                return (True, ls_list[1])
+                print_str = f"bestmove: {ls_list[1]}"
+                if len(info_list) >= 1:
+                    print_str += f" {info_list[-1].get_score()}"
+                print(print_str)
+                return (True, ls_list[1], info_list)
         return (False, False)
 
     def go_think(self, sfen, time_):
         self.__dprint(sfen)
         self.__stdin(sfen)
         s = "go btime " + str(time_) + " wtime " + str(time_)
-        return self.__exe_and_check_cmd(s, self.__check_go, (2, 1, 10), 10)
+        return self.__exe_and_check_cmd(s, self.__check_go, (time_/1000, time_/3000, 10), 10)
 
     # 深さベースの思考。time_refは参考思考時間
     def go_depth(self, sfen, depth, time_ref=5):

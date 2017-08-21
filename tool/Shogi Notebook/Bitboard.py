@@ -107,7 +107,7 @@ B_L = B_one * piece["L"][0]
 B_xL = B_one * piece["+L"][0]
 B_P = B_one * piece["P"][0]
 B_xP = B_one * piece["+P"][0]
-B_xP
+
 def get_pos(p, ban): # 駒のインデックスのタプルを返す
     if p == "k":
         return np.where(B_k == ban)

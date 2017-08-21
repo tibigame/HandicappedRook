@@ -6,6 +6,8 @@ from Bitboard import piece
 from Bitboard import reverse_piece
 from Bitboard import get_pos
 from Bitboard import B_BLACK, B_WHITE
+from collections import Counter
+from collections import OrderedDict
 
 row = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九",
           "十", "十一", "十二", "十三", "十四", "十五", "十六", "十七", "十八"]
@@ -27,6 +29,17 @@ def conv_pos_taple(p):
     for (x, y) in zip(p[0], p[1]):
         result.append((y + 1, x + 1)) # インデックスと符号は1ずれる
     return result
+
+# 指し手の詳細
+class Move_Detail:
+    def __init__(self):
+        self.type_ = ""
+        self.pos = ""
+        self.moved = ""
+        self.is_promote = False
+        self.move_piece_str = ""
+        self.get_piece_str = ""
+        self.detail = ""
 
 class Board:
     # コンストラクタ
@@ -299,8 +312,8 @@ class Board:
         ban = np.where(self.ban & bitboard, self.ban, 0)
         return len(ban[ban % 2 == 1])
     # USIプロトコルの指し手文字列を分析します。
-    def __analize_move(self, move_string):
-        def int_to_file(char):
+    def __analize_move(self, move_string: str):
+        def int_to_file(char: str) -> int:
             if(char == "1"):
                 return 1
             elif(char == "2"):
@@ -322,7 +335,7 @@ class Board:
             else:
                 raise ValueError("行は1-9で指定する必要があります：" + char)
 
-        def char_to_rank(char):
+        def char_to_rank(char: str) -> int:
             if(char == "a"):
                 return 1
             elif(char == "b"):
@@ -351,7 +364,7 @@ class Board:
             if m_l[1] != "*":
                 raise ValueError("駒を打つときの2文字目は*である必要があります")
             pos = (int_to_file(m_l[2]), char_to_rank(m_l[3]))
-            return ("place", peace, pos)
+            return ("place", peace, pos, False)
         # 盤上の駒を動かす
         pos = (int_to_file(m_l[0]), char_to_rank(m_l[1]))
         moved = (int_to_file(m_l[2]), char_to_rank(m_l[3]))
@@ -362,8 +375,13 @@ class Board:
         return ("move", pos, moved, is_promote)
 
     # USIプロトコルの指し手を与えて実行します。駒の動きの正当性のチェックはしません。
-    def move(self, move_string, detail_kif=False):
+    def move(self, move_string: str, detail_kif=False):
         m = self.__analize_move(move_string)
+        m_d = Move_Detail()
+        m_d.type = m[0]
+        m_d.pos = m[1]
+        m_d.moved = m[2]
+        m_d.is_promote = m[3]
         if m[0] == "move":
             # 起点の座標が自分の駒か
             if self.get_teban() == "b":
@@ -393,10 +411,11 @@ class Board:
                 print(f"{m[1]}→{m[2]}")
                 raise ValueError("玉を捕獲しようとしました")
             # 駒を動かす
+            m_d.move_piece_str = dec_piecenum(self.ban[m[1][1] - 1][m[1][0] - 1])
             # 詳細な棋譜表記生成
             if detail_kif:
                 detail = colmun(m[2][0]) + row(m[2][1])
-                detail += dec_piecenum(self.ban[m[1][1] - 1][m[1][0] - 1])
+                detail += piece[move_piece_str][1]
                  # TODO 上下寄右左などの条件を作成する必要がある
                 if m[3]: # TODO 不成の条件を作成する必要がある
                     detail += "成"
@@ -407,7 +426,8 @@ class Board:
             self.ban[m[1][1] - 1][m[1][0] - 1] = 0
             # 駒を取得する
             if get_piece:
-                self.koma[dec_piecenum(get_piece)] += 1
+                m_d.get_piece_str = dec_piecenum(get_piece)
+                self.koma[m_d.get_piece_str] += 1
 
         elif m[0] == "place":
             # 指し手は駒種しか入っていないので後手番なら小文字にする
@@ -422,18 +442,20 @@ class Board:
                 raise ValueError("駒を打つ場所が空ではありません")
             self.koma[p] -= 1 # 駒台から駒を1つ減らす
             self.ban[m[2][1] - 1][m[2][0] - 1] = piece[p][0] # 盤面に駒を置く
+            m_d.move_piece_str = p
             # 詳細な棋譜表記生成
             if detail_kif:
                 detail = colmun(m[2][0]) + row(m[2][1])
-                detail += piece(p)
+                detail += piece[p][1]
                 detail += "打" # TODO 打が入る条件を作成する必要がある
         else:
             raise ValueError("想定されたmoveではありません")
         self.set_teban("r") # 指し手が進んだので手番変更
         self.inc_count() # 手数カウントを1増やしておく
+        # 分析した指し手、取得した駒、詳細な棋譜表記のクラスを返す
         if detail_kif:
-            return detail
-        return
+            m_d.detail = detail
+        return m_d
 
     def __plot_common(self, plt):
         one = np.ones(9)
@@ -546,7 +568,6 @@ class Board:
             plt.fill_between((pre[0] - 10, pre[0] - 9), pre[1] - 10, pre[1] - 9, color='#97fef1')
         plt.show()
 
-
 # sfen形式の棋譜を扱うクラス(予定)
 kifu_option_test = {
     "title": "",
@@ -556,6 +577,17 @@ kifu_option_test = {
     "comment": "",
     "debug": ""
 }
+
+def calc_center(list_) -> float:
+    """2変数タプルのリスト列で表現されたデータから重心を求める"""
+    x_  = 0
+    y_  = 0
+    count = len(list_)
+    for (x, y) in list_:
+        x_ += x
+        y_ += y
+    return (x_ / count, y_ / count)
+
 class Kifu:
     # コンストラクタ
     def __init__(self, sfen="sfen lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"):
@@ -564,8 +596,27 @@ class Kifu:
         self.position_ = "position " + sfen + " moves " # position用のsfen
         self.movelist = [] # 棋譜
 
-    # 棋譜のオプションをセットする
+        self.__init_stat()
+
+    def __init_stat(self):
+        """棋譜統計情報の初期化を行います"""
+        self.pass_of_K = [self.nowBoard.get_x_pos1("K")] # 先手玉の位置
+        self.pass_of_k = [self.nowBoard.get_x_pos1("k")] # 後手玉の位置
+        self.pass_of_R = [self.nowBoard.get_x_pos1("R")] # 先手飛の位置 (開始時にはある前提)
+        self.pass_of_r = [self.nowBoard.get_x_pos1("r")] # 後手飛の位置 (開始時にはある前提)
+        self.pass_of_R_flag = True # このフラグがTrueの間飛車の位置を記録する
+        self.pass_of_r_flag = True # このフラグがTrueの間飛車の位置を記録する
+        self.stat_move = OrderedDict() # 動かした駒種の統計
+        od_list = (('K', 0),('R', 0),('B', 0),('G', 0),('S', 0),('N', 0),('L', 0),('P', 0),
+                   ('+R', 0),('+B', 0),('+S', 0),('+N', 0),('+L', 0),('+P', 0),('*_b', 0),
+                  ('k', 0),('r', 0),('b', 0),('g', 0),('s', 0),('n', 0),('l', 0),('p', 0),
+                   ('+r', 0),('+b', 0),('+s', 0),('+n', 0),('+l', 0),('+p', 0),('*_w', 0))
+        self.stat_move.update(OrderedDict(od_list))
+        self.stat_promote_b = 0 # 先手の成りの数
+        self.stat_promote_w = 0 # 後手の成りの数
+
     def set_option(self, option):
+        """棋譜のオプションをセットする"""
         self.title = option["title"]
         self.black_name = option["black_name"]
         self.white_name = option["white_name"]
@@ -573,17 +624,92 @@ class Kifu:
         self.comment = option["comment"]
         self.debug = option["debug"]
 
-    # 手数を返す
-    def get_tesuu(self):
+    def get_tesuu(self) -> int:
+        """手数を返す"""
         return len(self.movelist)
 
-    def get_sfen(self):
+    def get_sfen(self) -> str:
         return self.position_ + ' '.join(self.movelist)
 
-    def move(self, m):
-        self.nowBoard.move(m) # 現局面を動かす
+    def move(self, m: str):
+        move_detail = self.nowBoard.move(m) # 現局面を動かす
         self.movelist.append(m) # 棋譜に追加
-        return
+        self.__move_stat(move_detail) # 統計情報用の分析を行います
+
+    def __move_stat(self, m_d):
+        if m_d.type == "move": # 盤上の駒が移動する場合
+            self.stat_move[m_d.move_piece_str] += 1 # 動かした駒種の統計を更新
+
+            if m_d.move_piece_str == "K": # 先手玉移動
+                self.pass_of_K.append(m_d.moved) # 移動したので移動先の座標を追加する
+            else:
+                self.pass_of_K.append(self.pass_of_K[-1]) # 移動していないので末尾をそのまま追加する
+            if m_d.move_piece_str == "k": # 後手玉移動
+                self.pass_of_k.append(m_d.moved) # 移動したので移動先の座標を追加する
+            else:
+                self.pass_of_k.append(self.pass_of_k[-1]) # 移動していないので末尾をそのまま追加する
+
+            if self.pass_of_R_flag: # 先手飛の移動記録中
+                if m_d.move_piece_str == "R": # 先手飛移動
+                    self.pass_of_R.append(m_d.moved) # 移動したので移動先の座標を追加する
+                    if m_d.is_promote: # 成りが入ると記録を中止する
+                        self.pass_of_R_flag = False
+                else:
+                    self.pass_of_R.append(self.pass_of_R[-1]) # 移動していないので末尾をそのまま追加する
+            if self.pass_of_r_flag: # 後手飛の移動記録中
+                if m_d.move_piece_str == "r": # 後手飛移動
+                    self.pass_of_r.append(m_d.moved) # 移動したので移動先の座標を追加する
+                    if m_d.is_promote: # 成りが入ると記録を中止する
+                        self.pass_of_r_flag = False
+                else:
+                    self.pass_of_r.append(self.pass_of_r[-1]) # 移動していないので末尾をそのまま追加する
+
+            if m_d.get_piece_str == "r": # 後手が飛を得た=先手の駒であった飛が盤上から消えたということ
+                self.pass_of_R_flag = False
+            if m_d.get_piece_str == "R": # 先手が飛を得た=後手の駒であった飛が盤上から消えたということ
+                self.pass_of_r_flag = False
+
+            if m_d.is_promote: # 指し手が成りの場合
+                if self.nowBoard.get_teban() == "w": # 現局面が後手なら直前の指し手は先手のもの
+                    self.stat_promote_b += 1 # 先手の成りの数を1増やす
+                else: # 後手の指し手
+                    self.stat_promote_w += 1 # 後手の成りの数を1増やす
+
+        elif m_d.type == "place": # 駒を打つ場合
+            if self.nowBoard.get_teban() == "w": # 現局面が後手なら直前の指し手は先手のもの
+                self.stat_move['*_b'] += 1 # 動かした駒種の統計を更新
+            else: # 後手の指し手
+                self.stat_move['*_w'] += 1 # 動かした駒種の統計を更新
+
+    # 統計情報
+    def __stat_center_of_K(self): # 先手玉の重心
+        return calc_center(self.pass_of_K)
+    def __stat_center_of_k(self): # 後手玉の重心
+        return calc_center(self.pass_of_k)
+    def __stat_mode_of_K(self): # 先手玉の最頻値
+        return Counter(self.pass_of_K).most_common(1)[0][0]
+    def __stat_mode_of_k(self): # 後手玉の最頻値
+        return Counter(self.pass_of_k).most_common(1)[0][0]
+    def __stat_center_of_R(self): # 先手飛の重心
+        return calc_center(self.pass_of_R)
+    def __stat_center_of_r(self): # 後手飛の重心
+        return calc_center(self.pass_of_r)
+    def __stat_mode_of_R(self): # 先手飛の最頻値
+        return Counter(self.pass_of_R).most_common(1)[0][0]
+    def __stat_mode_of_r(self): # 後手飛の最頻値
+        return Counter(self.pass_of_r).most_common(1)[0][0]
+    def stat(self):
+        print(f"手数は{self.get_tesuu()}")
+        print(f"先手玉の重心は{self.__stat_center_of_K()}")
+        print(f"先手玉の最頻値は{self.__stat_mode_of_K()}")
+        print(f"後手玉の重心は{self.__stat_center_of_k()}")
+        print(f"後手玉の最頻値は{self.__stat_mode_of_k()}")
+        print(f"先手飛の重心は{self.__stat_center_of_R()}")
+        print(f"先手飛の最頻値は{self.__stat_mode_of_R()}")
+        print(f"後手飛の重心は{self.__stat_center_of_r()}")
+        print(f"後手飛の最頻値は{self.__stat_mode_of_r()}")
+        print(f"先手の成りの数は{self.stat_promote_b}")
+        print(f"後手の成りの数は{self.stat_promote_w}")
 
 # usinewgame済のエンジンを与えると棋譜の現局面から対局を実行する。
 # 対局終了後はisready状態に戻る。
