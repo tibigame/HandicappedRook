@@ -640,6 +640,9 @@ class Kifu:
         if self.stat_flag:
             self.__move_stat(move_detail, info) # 統計情報用の分析を行います
 
+    def gameover(self, black_result: str): # 投了、千日手など対局を終了させる
+        self.result = black_result # 先手の勝敗結果を与える
+
     def __move_stat(self, m_d, info):
         if m_d.type == "move": # 盤上の駒が移動する場合
             self.stat_move[m_d.move_piece_str] += 1 # 動かした駒種の統計を更新
@@ -685,12 +688,21 @@ class Kifu:
             else: # 後手の指し手
                 self.stat_move['*_w'] += 1 # 動かした駒種の統計を更新
 
-        if info:  # infoは送られるなら常に送られることが前提
-            self.stat_score_val.append(info.get_score_val())  # 評価値を追加する
+        if info: # infoは送られるなら常に送られることが前提
+            self.stat_score_val.append(info.get_score_val()) # 評価値を追加する
         elif len(self.stat_score_val) >= 2:  # infoが無かった場合は前の評価値を流用することで代用
             self.stat_score_val.append(self.stat_score_val[-2])
 
     # 統計情報
+    def __stat_result(self): # 勝敗を表示
+        if self.result == "win":
+            print("先手の勝ちです")
+        elif self.result == "lose":
+            print("後手の勝ちです")
+        elif self.result == "draw":
+            print("引き分けです")
+        else:
+            print("無勝負です")
     def __stat_center_of_K(self): # 先手玉の重心
         return calc_center(self.pass_of_K)
     def __stat_center_of_k(self): # 後手玉の重心
@@ -723,7 +735,22 @@ class Kifu:
         self.white_score_val = white_score_val
         self.diff_score_val = diff_score_val
 
+    def __stat_score_val(self): # 評価値の統計情報表示
+        self.calc_score_val()
+        if self.result == "win": # 先手勝ちの場合
+            win_min_val = min(self.black_score_val)
+            lose_max_val = max(self.white_score_val)
+        elif self.result == "lose": # 後手勝ちの場合
+            win_min_val = min(self.white_score_val)
+            lose_max_val = max(self.black_score_val)
+        else:
+            return
+        print(f"勝った方の最小の評価値は{win_min_val}")
+        print(f"負けた方の最大の評価値は{lose_max_val}")
+
     def stat(self):
+        self.__stat_result()
+        self.__stat_score_val()
         print(f"手数は{self.get_tesuu()}")
         print(f"先手玉の重心は{self.__stat_center_of_K()}")
         print(f"先手玉の最頻値は{self.__stat_mode_of_K()}")
@@ -733,8 +760,8 @@ class Kifu:
         print(f"先手飛の最頻値は{self.__stat_mode_of_R()}")
         print(f"後手飛の重心は{self.__stat_center_of_r()}")
         print(f"後手飛の最頻値は{self.__stat_mode_of_r()}")
-        print(f"先手の成りの数は{self.stat_promote_b}")
-        print(f"後手の成りの数は{self.stat_promote_w}")
+        print(f"先手の成りの回数は{self.stat_promote_b}")
+        print(f"後手の成りの回数は{self.stat_promote_w}")
 
 # usinewgame済のエンジンを与えると棋譜の現局面から対局を実行する。
 # 対局終了後はisready状態に戻る。
@@ -748,10 +775,18 @@ def battle(black_engine, white_engine, kifu):
         if bestmove == "resign": # 投了
             black_engine.gameover()
             white_engine.gameover()
+            if kifu.nowBoard.get_teban() == "b": # 先手番(ここはまだ指し手が進んでいない)で投了なので先手負け
+                kifu.gameover("lose")
+            else: # 後手番で投了なので先手勝ち
+                kifu.gameover("win")
             return kifu
         if bestmove == "win": # 宣言勝ち
             black_engine.gameover()
             white_engine.gameover()
+            if kifu.nowBoard.get_teban() == "b": # 先手番(ここはまだ指し手が進んでいない)で宣言勝ちなので先手勝ち
+                kifu.gameover("win")
+            else: # 後手番で宣言勝ちなので先手負け
+                kifu.gameover("lose")
             return kifu
         info_list = go_result[1]
         info = info_list[-1] if len(info_list) >= 1 else None # 最新のinfoだけを抽出(あれば)
@@ -760,4 +795,5 @@ def battle(black_engine, white_engine, kifu):
     # 256手超えで引き分け
     black_engine.gameover()
     white_engine.gameover()
+    kifu.gameover("draw")
     return kifu
