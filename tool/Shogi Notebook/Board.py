@@ -590,7 +590,7 @@ def calc_center(list_: object) -> (float, float):
 
 class Kifu:
     # コンストラクタ
-    def __init__(self, sfen="sfen lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1", stat_flag=True):
+    def __init__(self, sfen="sfen lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1", stat_flag=True, kifu_option=None):
         """初期局面を与える。stat_flagは詰将棋など特殊局面で棋譜統計を切りたい時にFalseにする"""
         self.startBoard = Board(sfen) # 初期局面(固定)
         self.nowBoard = Board(sfen) # 現局面
@@ -599,6 +599,8 @@ class Kifu:
         self.stat_flag = stat_flag
         if stat_flag:
             self.__init_stat()
+        if kifu_option:
+            self.kifu_option = kifu_option
 
     def __init_stat(self):
         """棋譜統計情報の初期化を行います"""
@@ -699,6 +701,14 @@ class Kifu:
 
         if progress:
             self.stat_progress.append(progress) # 進行度を追加する
+
+    def print_kifu_option(self):
+        if self.kifu_option:
+            b = self.kifu_option["black_name"]
+            w = self.kifu_option["white_name"]
+            teai = self.kifu_option["teai"]
+            print(f"☗{b} VS ☖{w}")
+            print(f"手合い： {teai}")
 
     # 統計情報
     def __stat_result(self): # 勝敗を表示

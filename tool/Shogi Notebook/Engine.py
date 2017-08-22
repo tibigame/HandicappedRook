@@ -77,6 +77,7 @@ class Info:
 class Engine:
     # コンストラクタ
     def __init__(self, engine, debug=False):
+        self.local_name = engine["name"]
         self.cwd = engine["cwd"]
         self.engine_cmd = engine["engine_cmd"]
         self.temp = engine["stdout"]
