@@ -775,8 +775,10 @@ def battle(black_engine, white_engine, kifu):
     think_time = 100
     while kifu.get_tesuu() <= 256:
         pos = kifu.get_sfen()
-        now_engine = black_engine if kifu.nowBoard.get_teban() == "w" else white_engine
-        go_result = now_engine.go_think(pos, think_time)[1]
+        if kifu.nowBoard.get_teban() == "b":
+            go_result = black_engine.go_think(pos, think_time)[1]
+        else:
+            go_result = white_engine.go_think(pos, think_time)[1]
         bestmove = go_result[0]
         if bestmove == "resign": # 投了
             black_engine.gameover()
