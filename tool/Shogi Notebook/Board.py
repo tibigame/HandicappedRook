@@ -690,8 +690,11 @@ class Kifu:
 
         if info: # infoは送られるなら常に送られることが前提
             self.stat_score_val.append(info.get_score_val()) # 評価値を追加する
-        elif len(self.stat_score_val) >= 2:  # infoが無かった場合は前の評価値を流用することで代用
-            self.stat_score_val.append(self.stat_score_val[-2])
+        else: # infoが無かった場合は前の評価値を流用することで代用
+            if len(self.stat_score_val) <= 2:
+                self.stat_score_val.append(0)
+            else:
+                self.stat_score_val.append(self.stat_score_val[-2])
 
     # 統計情報
     def __stat_result(self): # 勝敗を表示
