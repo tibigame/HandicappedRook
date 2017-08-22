@@ -69,12 +69,15 @@ class Info:
             return int(self.score)
         if hasattr(self, "mate"):
             m = int(self.mate)
+            if m == 0 or m == 1 or m == -1:
+                return 0
             return 2**15 if m >= 0 else -2**15
         return 0
 
 class Engine:
     # コンストラクタ
     def __init__(self, engine, debug=False):
+        self.cwd = engine["cwd"]
         self.engine_cmd = engine["engine_cmd"]
         self.temp = engine["stdout"]
         self.option = engine["option"]
@@ -119,7 +122,7 @@ class Engine:
         self.fr = open(self.temp, 'r') # 読み込みでファイルを開く
         self.stat = os.stat(self.temp) # ファイルの情報を取得
         self.__dprint(f"size={self.stat.st_size}")
-        self.p = subprocess.Popen(self.engine_cmd, stdin=subprocess.PIPE, stdout=self.fw, stderr=subprocess.PIPE, universal_newlines=True)
+        self.p = subprocess.Popen(self.engine_cmd, stdin=subprocess.PIPE, stdout=self.fw, stderr=subprocess.PIPE, universal_newlines=True, cwd=self.cwd)
         # usiコマンドとその応答確認
         if not self.__exe_and_check_cmd("usi", self.__check_usi, (0.05, 0.3, 5))[0]:
             return False
@@ -204,7 +207,7 @@ class Engine:
     def go_think(self, sfen, time_):
         self.__dprint(sfen)
         self.__stdin(sfen)
-        s = "go btime " + str(time_) + " wtime " + str(time_)
+        s = "go btime 0 wtime 0 byoyomi " + str(time_)
         return self.__exe_and_check_cmd(s, self.__check_go, (time_/1000, time_/3000, 10), 10)
 
     # 深さベースの思考。time_refは参考思考時間
