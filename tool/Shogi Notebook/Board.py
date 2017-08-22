@@ -617,6 +617,7 @@ class Kifu:
         self.stat_promote_b = 0 # 先手の成りの数
         self.stat_promote_w = 0 # 後手の成りの数
         self.stat_score_val = [] # 評価値
+        self.stat_progress = [] # 進行度
 
     def set_option(self, option):
         """棋譜のオプションをセットする"""
@@ -634,16 +635,16 @@ class Kifu:
     def get_sfen(self) -> str:
         return self.position_ + ' '.join(self.movelist)
 
-    def move(self, m: str, info=None):
+    def move(self, m: str, info=None, progress=None):
         move_detail = self.nowBoard.move(m) # 現局面を動かす
         self.movelist.append(m) # 棋譜に追加
         if self.stat_flag:
-            self.__move_stat(move_detail, info) # 統計情報用の分析を行います
+            self.__move_stat(move_detail, info, progress) # 統計情報用の分析を行います
 
     def gameover(self, black_result: str): # 投了、千日手など対局を終了させる
         self.result = black_result # 先手の勝敗結果を与える
 
-    def __move_stat(self, m_d, info):
+    def __move_stat(self, m_d, info, progress):
         if m_d.type == "move": # 盤上の駒が移動する場合
             self.stat_move[m_d.move_piece_str] += 1 # 動かした駒種の統計を更新
 
@@ -695,6 +696,9 @@ class Kifu:
                 self.stat_score_val.append(0)
             else:
                 self.stat_score_val.append(self.stat_score_val[-2])
+
+        if progress:
+            self.stat_progress.append(progress) # 進行度を追加する
 
     # 統計情報
     def __stat_result(self): # 勝敗を表示
@@ -771,10 +775,11 @@ class Kifu:
 
 # usinewgame済のエンジンを与えると棋譜の現局面から対局を実行する。
 # 対局終了後はisready状態に戻る。
-def battle(black_engine, white_engine, kifu):
+def battle(black_engine, white_engine, kifu, progress_engine):
     think_time = 100
     while kifu.get_tesuu() <= 256:
         pos = kifu.get_sfen()
+        progress = progress_engine.progress(pos)
         if kifu.nowBoard.get_teban() == "b":
             go_result = black_engine.go_think(pos, think_time)[1]
         else:
@@ -798,7 +803,7 @@ def battle(black_engine, white_engine, kifu):
             return kifu
         info_list = go_result[1]
         info = info_list[-1] if len(info_list) >= 1 else None # 最新のinfoだけを抽出(あれば)
-        kifu.move(bestmove, info)
+        kifu.move(bestmove, info, progress)
 
     # 256手超えで引き分け
     black_engine.gameover()

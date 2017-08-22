@@ -245,6 +245,18 @@ class Engine:
             print(ls)
         return True
 
+    # progressコマンドの実行
+    def progress(self, sfen):
+        self.__stdin(sfen)
+        return self.__exe_and_check_cmd("prog", self.__check_progress, (0.01, 0.1, 10), 10, True)[1]
+
+    # progressコマンドの結果を確認する (Yomita形式)
+    def __check_progress(self, progress_read):
+        progress = "0"
+        for l in progress_read:
+            progress = l[:-1]
+        return (True, float(progress[:-1]))
+
     def get_stdout_lines(self):
         return self.fr.readlines()
 
