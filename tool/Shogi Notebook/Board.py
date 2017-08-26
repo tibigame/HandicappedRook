@@ -33,12 +33,14 @@ def conv_pos_taple(p):
 # 指し手の詳細
 class Move_Detail:
     def __init__(self):
-        self.type_ = ""
+        self.type = ""
         self.pos = ""
         self.moved = ""
         self.is_promote = False
         self.move_piece_str = ""
         self.get_piece_str = ""
+        self.get_piece_origin_str = ""
+        self.get_piece_promoted = False
         self.detail = ""
 
 
@@ -427,6 +429,8 @@ class Board:
             self.ban[m[1][1] - 1][m[1][0] - 1] = 0
             # 駒を取得する
             if get_piece:
+                m_d.get_piece_promoted = self.is_promote(m[2])
+                m_d.get_piece_origin_str = dec_piecenum(self.get_raw_num(m[2]))
                 m_d.get_piece_str = dec_piecenum(get_piece)
                 self.koma[m_d.get_piece_str] += 1
 

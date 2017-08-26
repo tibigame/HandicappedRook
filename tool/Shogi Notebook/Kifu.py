@@ -2,6 +2,8 @@ import numpy as np
 from collections import Counter
 from collections import OrderedDict
 import Board
+from Board import Move_Detail
+from PieceDistribution import PieceDistribution
 
 kifu_option_test = {
     "title": "",
@@ -22,6 +24,26 @@ def calc_center(list_: object) -> (float, float):
         x_ += x
         y_ += y
     return (x_ / count, y_ / count)
+
+
+class PieceDistributionData:
+    def __init__(self):
+        self.black_piece_value = []
+        self.white_piece_value = []
+        self.diff_piece_value = []
+        self.black_piece_point = []
+        self.white_piece_point = []
+        self.black_nyugoku_point = []
+        self.white_nyugoku_point = []
+
+    def add(self, p_d: PieceDistribution):
+        self.black_piece_value.append(p_d.get_black_piece_value())
+        self.white_piece_value.append(p_d.get_white_piece_value())
+        self.diff_piece_value.append(p_d.get_diff_piece_value())
+        self.black_piece_point.append(p_d.get_black_piece_point())
+        self.white_piece_point.append(p_d.get_white_piece_point())
+        self.black_nyugoku_point.append(p_d.get_black_nyugoku_point())
+        self.white_nyugoku_point.append(p_d.get_white_nyugoku_point())
 
 
 class Kifu:
@@ -57,6 +79,8 @@ class Kifu:
         self.stat_promote_w = 0 # 後手の成りの数
         self.stat_score_val = [] # 評価値
         self.stat_progress = [] # 進行度
+        self.piece_distribution = PieceDistribution(self.nowBoard) # 駒割計算用
+        self.stat_piece_distribution = PieceDistributionData() # 駒割
 
     def set_option(self, option):
         """棋譜のオプションをセットする"""
@@ -83,9 +107,11 @@ class Kifu:
     def gameover(self, black_result: str): # 投了、千日手など対局を終了させる
         self.result = black_result # 先手の勝敗結果を与える
 
-    def __move_stat(self, m_d, info, progress):
+    def __move_stat(self, m_d: Move_Detail, info, progress):
         if m_d.type == "move": # 盤上の駒が移動する場合
             self.stat_move[m_d.move_piece_str] += 1 # 動かした駒種の統計を更新
+            self.piece_distribution.move_ban(m_d.pos, m_d.moved, m_d.move_piece_str, m_d.is_promote) # 駒の移動による駒割変更
+
 
             if m_d.move_piece_str == "K": # 先手玉移動
                 self.pass_of_K.append(m_d.moved) # 移動したので移動先の座標を追加する
@@ -116,6 +142,9 @@ class Kifu:
             if m_d.get_piece_str == "R": # 先手が飛を得た=後手の駒であった飛が盤上から消えたということ
                 self.pass_of_r_flag = False
 
+            if m_d.get_piece_str: # 駒を捕捉した場合の駒割更新
+                self.piece_distribution.move_get_piece(m_d.pos, m_d.get_piece_origin_str, m_d.get_piece_str, m_d.get_piece_promoted)
+
             if m_d.is_promote: # 指し手が成りの場合
                 if self.nowBoard.get_teban() == "w": # 現局面が後手なら直前の指し手は先手のもの
                     self.stat_promote_b += 1 # 先手の成りの数を1増やす
@@ -125,8 +154,10 @@ class Kifu:
         elif m_d.type == "place": # 駒を打つ場合
             if self.nowBoard.get_teban() == "w": # 現局面が後手なら直前の指し手は先手のもの
                 self.stat_move['*_b'] += 1 # 動かした駒種の統計を更新
+                self.piece_distribution.move_place(m_d.moved, m_d.move_piece_str.upper())
             else: # 後手の指し手
                 self.stat_move['*_w'] += 1 # 動かした駒種の統計を更新
+                self.piece_distribution.move_place(m_d.moved, m_d.move_piece_str.lower())
 
         if info: # infoは送られるなら常に送られることが前提
             self.stat_score_val.append(info.get_score_val()) # 評価値を追加する
@@ -138,6 +169,8 @@ class Kifu:
 
         if progress:
             self.stat_progress.append(progress) # 進行度を追加する
+
+        self.stat_piece_distribution.add(self.piece_distribution) # 駒割の統計更新
 
     def print_kifu_option(self):
         if self.kifu_option:
