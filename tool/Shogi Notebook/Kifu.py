@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from collections import Counter
 from collections import OrderedDict
@@ -25,6 +26,14 @@ def calc_center(list_: object) -> (float, float):
         y_ += y
     return (x_ / count, y_ / count)
 
+
+def make_repeat_list(source_list):
+    """[0,1,2,]のリストを[0,0,1,1,2,2,]のようにする"""
+    result_list = []
+    for x in source_list:
+        result_list.append(x)
+        result_list.append(x)
+    return result_list
 
 class PieceDistributionData:
     def __init__(self):
@@ -210,17 +219,20 @@ class Kifu:
         normal_score_val = self.stat_score_val # 通常の評価値リスト
         reverse_score_val = [x if i%2 == 0 else -x for (i, x) in enumerate(normal_score_val)] # 後手の評価値を反転して先手から見たものに
         black_score_val = normal_score_val[0::2] # 先手の評価値だけを切り出したもの
-        white_score_val = normal_score_val[1::2] # 後手の評価値だけを切り出したもの
+        white_score_val = reverse_score_val[1::2] # 後手の評価値だけを切り出したもの(反転)
         # 先後のエンジンの評価値の差
         if len(black_score_val) == len(white_score_val):
-            diff_score_val = np.array(black_score_val) + np.array(white_score_val)
+            diff_score_val = np.array(black_score_val) - np.array(white_score_val)
         else:
-            diff_score_val = np.array(black_score_val[:-1]) + np.array(white_score_val)
+            diff_score_val = np.array(black_score_val[:-1]) - np.array(white_score_val)
         self.normal_score_val = normal_score_val
         self.reverse_score_val = reverse_score_val
         self.black_score_val = black_score_val
         self.white_score_val = white_score_val
         self.diff_score_val = diff_score_val
+        self.white2_score_val = make_repeat_list(white_score_val)
+        self.black2_score_val = make_repeat_list(black_score_val)
+        self.diff2_score_val = make_repeat_list(diff_score_val)
 
     def __stat_score_val(self): # 評価値の統計情報表示
         if len(self.stat_score_val) <= 2: # 評価値情報がない
@@ -228,9 +240,9 @@ class Kifu:
         self.calc_score_val()
         if self.result == "win": # 先手勝ちの場合
             win_min_val = min(self.black_score_val)
-            lose_max_val = max(self.white_score_val)
+            lose_max_val = -min(self.white_score_val)
         elif self.result == "lose": # 後手勝ちの場合
-            win_min_val = min(self.white_score_val)
+            win_min_val = -max(self.white_score_val)
             lose_max_val = max(self.black_score_val)
         else:
             return True # calc_score_val()は実行した
@@ -252,6 +264,26 @@ class Kifu:
         print(f"後手飛の最頻値は{self.__stat_mode_of_r()}")
         print(f"先手の成りの回数は{self.stat_promote_b}")
         print(f"後手の成りの回数は{self.stat_promote_w}")
+
+    def plot_prog(self):
+        """進行度をプロットする"""
+        plt.figure(figsize=(14, 8)) # サイズ
+        plt.ylim((0, 100)) # 進行度は0-100%
+        plt.plot(self.stat_progress, label="progress")  # 進行度のグラフをプロット
+        plt.xlabel("tesuu")
+        plt.ylabel("progress (%)")
+        plt.legend() # 凡例の表示
+
+    def plot_score(self):
+        """評価値、駒割りの値をプロットする"""
+        plt.figure(figsize=(14, 8)) # サイズ
+        plt.ylim((-4000, 4000)) # 4000程度が見られれば十分
+        plt.plot(self.stat_piece_distribution.diff_piece_value, label="diff_komawari")
+        plt.plot(self.black2_score_val, label="black_hyokachi")
+        plt.plot(self.white2_score_val, label="white_hyokachi")
+        plt.xlabel("tesuu")
+        plt.ylabel("hyokachi")
+        plt.legend()
 
 
 # usinewgame済のエンジンを与えると棋譜の現局面から対局を実行する。
