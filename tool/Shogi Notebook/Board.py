@@ -413,6 +413,9 @@ class Board:
                 print(self.get_sfen())
                 print(f"{m[1]}→{m[2]}")
                 raise ValueError("玉を捕獲しようとしました")
+            if get_piece: # 駒を動かす前に取られる駒の情報を保持しておく
+                m_d.get_piece_promoted = self.is_promote(m[2])
+                m_d.get_piece_origin_str = dec_piecenum(self.get_raw_num(m[2]))
             # 駒を動かす
             m_d.move_piece_str = dec_piecenum(self.ban[m[1][1] - 1][m[1][0] - 1])
             # 詳細な棋譜表記生成
@@ -429,8 +432,6 @@ class Board:
             self.ban[m[1][1] - 1][m[1][0] - 1] = 0
             # 駒を取得する
             if get_piece:
-                m_d.get_piece_promoted = self.is_promote(m[2])
-                m_d.get_piece_origin_str = dec_piecenum(self.get_raw_num(m[2]))
                 m_d.get_piece_str = dec_piecenum(get_piece)
                 self.koma[m_d.get_piece_str] += 1
 

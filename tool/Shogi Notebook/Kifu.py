@@ -143,7 +143,7 @@ class Kifu:
                 self.pass_of_r_flag = False
 
             if m_d.get_piece_str: # 駒を捕捉した場合の駒割更新
-                self.piece_distribution.move_get_piece(m_d.pos, m_d.get_piece_origin_str, m_d.get_piece_str, m_d.get_piece_promoted)
+                self.piece_distribution.move_get_piece(m_d.moved, m_d.get_piece_origin_str, m_d.get_piece_str, m_d.get_piece_promoted)
 
             if m_d.is_promote: # 指し手が成りの場合
                 if self.nowBoard.get_teban() == "w": # 現局面が後手なら直前の指し手は先手のもの
