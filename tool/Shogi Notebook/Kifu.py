@@ -286,6 +286,19 @@ class Kifu:
         plt.legend()
 
 
+    def plot_point(self):
+        """駒点数の値をプロットする"""
+        plt.figure(figsize=(14, 8)) # サイズ
+        plt.ylim((0, 40))
+        plt.plot(self.stat_piece_distribution.black_piece_point, label="black_piece_point")
+        plt.plot(self.stat_piece_distribution.white_piece_point, label="white_piece_point")
+        plt.plot(self.stat_piece_distribution.black_nyugoku_point, label="black_nyugoku_point")
+        plt.plot(self.stat_piece_distribution.white_nyugoku_point, label="white_nyugoku_point")
+        plt.xlabel("tesuu")
+        plt.ylabel("points")
+        plt.legend()
+
+
 # usinewgame済のエンジンを与えると棋譜の現局面から対局を実行する。
 # 対局終了後はisready状態に戻る。
 def battle(black_engine, white_engine, kifu, progress_engine):
