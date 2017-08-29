@@ -1,5 +1,236 @@
 import numpy as np
 
+
+# 基本のビット位置操作をしてndarrayを返す
+def up(s, x: int):  # x上にずらす
+    s[:(9 - x)] = s[x:]
+    return s
+
+
+def down(s, x: int):  # x下にずらす
+    s[x:] = s[:(9 - x)]
+    return s
+
+
+def right(s, x: int):  # x右にずらす
+    s[:, x:] = s[:, :(9 - x)]
+    return s
+
+
+def left(s, x: int):  # x左にずらす
+    s[:, :(9 - x)] = s[:, x:]
+    return s
+
+
+def up_right(s, x: int):  # x右上にずらす
+    return up(right(s, x), x)
+
+
+def up_left(s, x: int):  # x左上にずらす
+    return up(left(s, x), x)
+
+
+def down_right(s, x: int):  # x右下にずらす
+    return down(right(s, x), x)
+
+
+def down_left(s, x: int):  # x左下にずらす
+    return down(left(s, x), x)
+
+
+B_0 = np.zeros([9, 9], "bool")
+B_1 = np.invert(B_0)
+
+
+class BitBoard:
+    def __init__(self):
+        self.FALSE()
+
+    def FALSE(self):
+        self.a = np.zeros([9, 9], "bool")  # 全てFalseで初期化
+
+    def TRUE(self):
+        self.a = np.ones([9, 9], "bool")  # 全てTrueで初期化
+
+    def NOT(self):  # 全てビット反転する
+        self.a = ~self.a
+
+    def pos(self, x, y):  # x, yにTrueをセットする
+        self.a[y - 1][x - 1] = True
+
+    def rank(self, rank):  # 1行がTrueのndarrayを返す
+        temp = self.a.copy()
+        temp[rank - 1, :] = np.ones([1, 9], "bool")
+        return temp
+
+    def file(self, file):  # 1列がTrueのndarrayを返す
+        temp = self.a.copy()
+        temp[:, file - 1] = np.ones([1, 9], "bool")
+        return temp
+
+    def set_rank_list(self, rank_list):  # 横の行 (1-9のリスト)
+        for r in rank_list:
+            self.a[r - 1, :] = np.ones([1, 9], "bool")
+
+    def set_file_list(self, file_list):  # 縦の行 (1-9のリスト)
+        for f in file_list:
+            self.a[:, f - 1] = np.ones([1, 9], "bool")
+
+    # 基本のビット位置操作
+    def up(self, x: int):  # x上にずらす
+        self.a = up(x)
+
+    def down(self, x: int):  # x下にずらす
+        self.a = down(x)
+
+    def right(self, x: int):  # x右にずらす
+        self.a = right(x)
+
+    def left(self, x: int):  # x左にずらす
+        self.a = left(x)
+
+    def black_p(self):  # 先手の歩の効きを返す
+        return up(self.a, 1)
+
+    def white_p(self):  # 後手の歩の効きを返す
+        return down(self.a, 1)
+
+    def missile(self, func):  # 飛び道具の効きを返す
+        # 1つずらしてマージ、2つずらしてマージ、4つずらしてマージ、1つずらすを順にする
+        temp1 = func(self.a.copy(), 1)
+        temp1m = self.a + temp1
+        temp2 = func(temp1m.copy(), 2)
+        temp2m = temp1m.copy() + temp2
+        temp4 = func(temp2m.copy(), 4)
+        temp4m = temp2m.copy() + temp4
+        return func(temp4m, 1)
+
+    def black_l(self):  # 先手の香の効きを返す
+        return self.missile(up)
+
+    def white_l(self):  # 後手の香の効きを返す
+        return self.missile(down)
+
+    def r(self):  # 飛の効きを返す(先後同じ)
+        temp_up = self.missile(up)
+        temp_down = self.missile(down)
+        temp_right = self.missile(right)
+        temp_left = self.missile(left)
+        return temp_up + temp_down + temp_right + temp_left
+
+    def b(self):  # 角の効きを返す(先後同じ)
+        temp_up_right = self.missile(up_right)
+        temp_up_left = self.missile(up_left)
+        temp_down_right = self.missile(down_right)
+        temp_down_left = self.missile(down_left)
+        return temp_up_right + temp_up_left + temp_down_right + temp_down_left
+
+    def d(self):  # 龍の効きを返す(先後同じ)
+        temp_up_right = up_right(self.a.copy(), 1)
+        temp_up_left = up_left(self.a.copy(), 1)
+        temp_down_right = down_right(self.a.copy(), 1)
+        temp_down_left = down_left(self.a.copy(), 1)
+        return self.r() + temp_up_right + temp_up_left + temp_down_right + temp_down_left
+
+    def h(self):  # 馬の効きを返す(先後同じ)
+        temp_up = up(self.a.copy(), 1)
+        temp_down = down(self.a.copy(), 1)
+        temp_right = right(self.a.copy(), 1)
+        temp_left = left(self.a.copy(), 1)
+        return self.b() + temp_up + temp_down + temp_right + temp_left
+
+    def black_g(self):  # 先手の金の効きを返す
+        temp_up = up(self.a.copy(), 1)
+        temp_up_right = up_right(self.a.copy(), 1)
+        temp_up_left = up_left(self.a.copy(), 1)
+        temp_down = down(self.a.copy(), 1)
+        temp_right = right(self.a.copy(), 1)
+        temp_left = left(self.a.copy(), 1)
+        return temp_up + temp_up_right + temp_up_left + temp_down + temp_right + temp_left
+
+    def white_g(self):  # 後手の金の効きを返す
+        temp_up = up(self.a.copy(), 1)
+        temp_down = down(self.a.copy(), 1)
+        temp_down_right = down_right(self.a.copy(), 1)
+        temp_down_left = down_left(self.a.copy(), 1)
+        temp_right = right(self.a.copy(), 1)
+        temp_left = left(self.a.copy(), 1)
+        return temp_up + temp_down + temp_down_right + temp_down_left + temp_right + temp_left
+
+    def black_s(self):  # 先手の銀の効きを返す
+        temp_up = up(self.a.copy(), 1)
+        temp_up_right = up_right(self.a.copy(), 1)
+        temp_up_left = up_left(self.a.copy(), 1)
+        temp_down_right = down_right(self.a.copy(), 1)
+        temp_down_left = down_left(self.a.copy(), 1)
+        return temp_up + temp_up_right + temp_up_left + temp_down_right + temp_down_left
+
+    def white_s(self):  # 後手の銀の効きを返す
+        temp_down = down(self.a.copy(), 1)
+        temp_down_right = down_right(self.a.copy(), 1)
+        temp_down_left = down_left(self.a.copy(), 1)
+        temp_up_right = up_right(self.a.copy(), 1)
+        temp_up_left = up_left(self.a.copy(), 1)
+        return temp_down + temp_down_right + temp_down_left + temp_up_right + temp_up_left
+
+    def black_n(self):  # 先手の桂の効きを返す
+        temp_up2 = up(self.a.copy(), 2)
+        return right(temp_up2.copy(), 1) + left(temp_up2, 1)
+
+    def white_n(self):  # 後手の桂の効きを返す
+        temp_doown2 = down(self.a.copy(), 2)
+        return right(temp_doown2.copy(), 1) + left(temp_doown2, 1)
+
+    def set_king9(self, pos):  # 近傍9マス
+        x, y = pos
+        file = self.file(x)  # まず与えられた列
+        if x >= 2:  # 2以上ならば左の列も追加
+            file = file | self.file(x - 1)
+        if x <= 8:  # 8以下ならば右の列も追加
+            file = file | self.file(x + 1)
+        rank = self.rank(y)  # まず与えられた行
+        if y >= 2:  # 2以上ならば上の行も追加
+            rank = rank | self.rank(y - 1)
+        if y <= 8:  # 8以下ならば下の行も追加
+            rank = rank | self.rank(y + 1)
+        return file & rank  # 行と列のANDをとる
+
+    def set_king25(self, pos):  # 近傍25マス
+        x, y = pos
+        file = self.file(x)  # まず与えられた列
+        if x >= 2:  # 2以上ならば左の列も追加
+            file = file | self.file(x - 1)
+        if x >= 3:  # 3以上ならば左の列も追加
+            file = file | self.file(x - 2)
+        if x <= 8:  # 8以下ならば右の列も追加
+            file = file | self.file(x + 1)
+        if x <= 7:  # 7以下ならば右の列も追加
+            file = file | self.file(x + 2)
+        rank = self.rank(y)  # まず与えられた行
+        if y >= 2:  # 2以上ならば上の行も追加
+            rank = rank | self.rank(y - 1)
+        if y >= 3:  # 3以上ならば上の行も追加
+            rank = rank | self.rank(y - 2)
+        if y <= 8:  # 8以下ならば下の行も追加
+            rank = rank | self.rank(y + 1)
+        if y <= 7:  # 8以下ならば下の行も追加
+            rank = rank | self.rank(y + 2)
+        return file & rank  # 行と列のANDをとる
+
+    def merge_ndarray(self, y):  # orを取ってndarrayを返す
+        x = self.a.copy()
+        return x + y.a
+
+    def __add__(self, y):
+        return self.merge_ndarray(y)
+
+    def count0(self) -> int:  # Trueのマスをカウント
+        return len(np.where(self.a == B_0)[0])
+
+    def count1(self) -> int:  # Falseのマスをカウント
+        return 81 - self.count0()
+
+
 # 後手は+1 成りは+2にする
 piece = {
     "k": [4 + 1, "王"],
@@ -62,8 +293,6 @@ reverse_piece = {
     32 + 2: "+P"
 }
 
-B_0 = np.zeros([9, 9], "uint8") # 全て0
-B_1 = np.invert(B_0) # 0をビット反転して全ビット1にする
 B_one = np.ones([9, 9], "uint8") # 全て1
 
 RANK = np.invert(np.zeros([1, 9], "uint8"))
