@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 fp = FontProperties(fname=r'C:\Windows\Fonts\ipaexg.ttf', size=24)
-from Bitboard import piece
-from Bitboard import reverse_piece
-from Bitboard import get_pos
+from BitBoard import piece
+from BitBoard import reverse_piece
+from BitBoard import get_pos
 
 row = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九",
           "十", "十一", "十二", "十三", "十四", "十五", "十六", "十七", "十八"]

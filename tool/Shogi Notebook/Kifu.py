@@ -5,6 +5,10 @@ from collections import OrderedDict
 import Board
 from Board import Move_Detail
 from PieceDistribution import PieceDistribution
+from PieceDistribution import get_piece_value
+from BitBoard import BitBoard
+from BitBoard import reverse_piece
+
 
 kifu_option_test = {
     "title": "",
@@ -14,6 +18,13 @@ kifu_option_test = {
     "comment": "",
     "debug": ""
 }
+
+
+def xor(x: bool, y: bool)-> bool:
+    """排他的論理和"""
+    if (x == True and y == True) or (x == False and y == False):
+        return False
+    return True
 
 
 def calc_center(list_: object) -> (float, float):
@@ -90,6 +101,8 @@ class Kifu:
         self.stat_progress = [] # 進行度
         self.piece_distribution = PieceDistribution(self.nowBoard) # 駒割計算用
         self.stat_piece_distribution = PieceDistributionData() # 駒割
+        self.stat_black_king_hardness = [] # 先手玉の堅さ
+        self.stat_white_king_hardness = [] # 後手玉の堅さ
 
     def set_option(self, option):
         """棋譜のオプションをセットする"""
@@ -115,6 +128,28 @@ class Kifu:
 
     def gameover(self, black_result: str): # 投了、千日手など対局を終了させる
         self.result = black_result # 先手の勝敗結果を与える
+
+    def __king_hardness(self, move_str: str): # 玉の硬さを計算して結果を格納する
+        k_b = BitBoard()
+        # 動かした駒が大文字なら先手番
+        is_teban_black = True if move_str.isupper() else False
+        k_ndarray = k_b.king25(self.pass_of_K[-1]) if is_teban_black else k_b.king25(self.pass_of_k[-1])
+        king25list = np.where(np.logical_and((self.nowBoard.ban != 0), k_ndarray)) # nowBoardは1手先の局面だが実用上はこれでも問題ないだろう
+        king_hardness = 0
+        for x, y in zip(np.nditer(king25list[0]), np.nditer(king25list[1])):
+            piece_str = reverse_piece[self.nowBoard.ban[x][y]] # 現在の盤面の駒位置を直接参照して駒文字を求める
+            piece_val = get_piece_value(piece_str) # 対応する駒の価値(常に正の値)を求める
+            if xor(is_teban_black, piece_str.isupper()): # ここがTrueなら動かした駒と盤面の駒が逆であるということ
+                piece_val *= -1 # 逆側の駒価値として符号を反転する
+            king_hardness += piece_val
+        if is_teban_black:
+            self.stat_black_king_hardness.append(king_hardness)
+        else:
+            self.stat_white_king_hardness.append(king_hardness)
+
+    def __calc_king_hardness(self):
+        self.stat_black_king_hardness2 = make_repeat_list(self.stat_black_king_hardness)
+        self.stat_white_king_hardness2 = make_repeat_list(self.stat_white_king_hardness)
 
     def __move_stat(self, m_d: Move_Detail, info, progress):
         if m_d.type == "move": # 盤上の駒が移動する場合
@@ -180,6 +215,8 @@ class Kifu:
             self.stat_progress.append(progress) # 進行度を追加する
 
         self.stat_piece_distribution.add(self.piece_distribution) # 駒割の統計更新
+        self.__king_hardness(m_d.move_piece_str)
+
 
     def print_kifu_option(self):
         if self.kifu_option:
@@ -233,6 +270,7 @@ class Kifu:
         self.white2_score_val = make_repeat_list(white_score_val)
         self.black2_score_val = make_repeat_list(black_score_val)
         self.diff2_score_val = make_repeat_list(diff_score_val)
+        self.__calc_king_hardness() # 玉の堅さのリストもここでリピート処理をしておく
 
     def __stat_score_val(self): # 評価値の統計情報表示
         if len(self.stat_score_val) <= 2: # 評価値情報がない
@@ -281,6 +319,8 @@ class Kifu:
         plt.plot(self.stat_piece_distribution.diff_piece_value, label="diff_komawari")
         plt.plot(self.black2_score_val, label="black_hyokachi")
         plt.plot(self.white2_score_val, label="white_hyokachi")
+        plt.plot(self.stat_black_king_hardness2, label="black_king_hardness")
+        plt.plot(self.stat_white_king_hardness2, label="white_king_hardness")
         plt.xlabel("tesuu")
         plt.ylabel("hyokachi")
         plt.legend()

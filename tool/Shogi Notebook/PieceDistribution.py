@@ -17,6 +17,8 @@ nd_index = {
     "k": 0, "r": 1, "b": 2, "g": 3, "s": 4, "n": 5, "l": 6, "p": 7, "+r": 8, "+b": 9, "+s": 10, "+n": 11, "+l": 12, "+p": 13
 }
 
+def get_piece_value(piece_str):
+    return piece_value[nd_index[piece_str]]
 
 class PieceDistribution:
     """駒割りを扱うクラス"""

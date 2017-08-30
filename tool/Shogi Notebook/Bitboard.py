@@ -181,7 +181,7 @@ class BitBoard:
         temp_doown2 = down(self.a.copy(), 2)
         return right(temp_doown2.copy(), 1) + left(temp_doown2, 1)
 
-    def set_king9(self, pos):  # 近傍9マス
+    def king9(self, pos):  # 近傍9マス
         x, y = pos
         file = self.file(x)  # まず与えられた列
         if x >= 2:  # 2以上ならば左の列も追加
@@ -195,7 +195,7 @@ class BitBoard:
             rank = rank | self.rank(y + 1)
         return file & rank  # 行と列のANDをとる
 
-    def set_king25(self, pos):  # 近傍25マス
+    def king25(self, pos):  # 近傍25マス
         x, y = pos
         file = self.file(x)  # まず与えられた列
         if x >= 2:  # 2以上ならば左の列も追加
