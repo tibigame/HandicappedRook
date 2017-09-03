@@ -74,6 +74,7 @@ class Info:
             return 2**15 if m >= 0 else -2**15
         return 0
 
+
 class Engine:
     # コンストラクタ
     def __init__(self, engine, debug=False):
@@ -82,7 +83,7 @@ class Engine:
         self.engine_cmd = engine["engine_cmd"]
         self.temp = engine["stdout"]
         self.option = engine["option"]
-        self.debug = debug # Trueならデバッグ用の出力をする
+        self.debug = debug  # Trueならデバッグ用の出力をする
         self.__dprint("on")
 
     # デバッグプリント用
@@ -106,22 +107,22 @@ class Engine:
         l = 0
         while True:
             l += 1
-            if self.__polling_file(polling[0], polling[1], polling[2]): # ファイルが更新されたら
-                result = check(self.get_stdout_lines()) # ファイルを読みに行く
-                if result[0]: # ファイルを読みに行って結果をチェックルーチンに渡す
-                    return (True, result[1]) # 成功, 結果はresult[1]に格納
-            if l >= times: # 規定回数のループで成功しなかった
-                if kill: # killフラグがTrueのときは失敗時にkill処理を実行する
+            if self.__polling_file(polling[0], polling[1], polling[2]):  # ファイルが更新されたら
+                result = check(self.get_stdout_lines())  # ファイルを読みに行く
+                if result[0]:  # ファイルを読みに行って結果をチェックルーチンに渡す
+                    return (True, result[1])  # 成功, 結果はresult[1]に格納
+            if l >= times:  # 規定回数のループで成功しなかった
+                if kill:  # killフラグがTrueのときは失敗時にkill処理を実行する
                     self.__kill()
                 return (False, False)
 
     # エンジンの初期化
     def init_engine(self):
-        if os.path.isfile(self.temp): #tempファイルの存在確認
-            os.remove(self.temp) # 存在していれば消す
-        self.fw = open(self.temp, 'a') # 標準出力用にファイルを書き込みで開く
-        self.fr = open(self.temp, 'r') # 読み込みでファイルを開く
-        self.stat = os.stat(self.temp) # ファイルの情報を取得
+        if os.path.isfile(self.temp):  #tempファイルの存在確認
+            os.remove(self.temp)  # 存在していれば消す
+        self.fw = open(self.temp, 'a')  # 標準出力用にファイルを書き込みで開く
+        self.fr = open(self.temp, 'r')  # 読み込みでファイルを開く
+        self.stat = os.stat(self.temp)  # ファイルの情報を取得
         self.__dprint(f"size={self.stat.st_size}")
         self.p = subprocess.Popen(self.engine_cmd, stdin=subprocess.PIPE, stdout=self.fw, stderr=subprocess.PIPE, universal_newlines=True, cwd=self.cwd)
         # usiコマンドとその応答確認
@@ -142,9 +143,9 @@ class Engine:
 
     # 標準出力ファイルが更新されたかを確認する
     def __is_update_stdout(self):
-        new_stat = os.stat(self.temp) # 現在のファイル情報を取得
-        if self.stat.st_size != new_stat.st_size: # ファイルサイズが異なれば更新されたということ
-            self.stat = new_stat # ファイル情報を最新のものにする
+        new_stat = os.stat(self.temp)  # 現在のファイル情報を取得
+        if self.stat.st_size != new_stat.st_size:  # ファイルサイズが異なれば更新されたということ
+            self.stat = new_stat  # ファイル情報を最新のものにする
             self.__dprint(f"size={new_stat.st_size}")
             self.__dprint("ファイルが更新されました")
             return True
@@ -232,7 +233,7 @@ class Engine:
             elif ls[0:10] == "checkmate ":
                 ls_list = ls.split(" ")
                 print(f"checkmate: {ls_list[1:]}")
-                return (True, ls_list[1:]) # 詰将棋の解答
+                return (True, ls_list[1:])  # 詰将棋の解答
         return (False, False)
 
     # benchコマンドとその応答確認

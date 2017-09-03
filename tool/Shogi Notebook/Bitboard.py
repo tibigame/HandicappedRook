@@ -293,20 +293,20 @@ reverse_piece = {
     32 + 2: "+P"
 }
 
-B_one = np.ones([9, 9], "uint8") # 全て1
+B_one = np.ones([9, 9], "uint8")  # 全て1
 
 RANK = np.invert(np.zeros([1, 9], "uint8"))
 FILE = np.invert(np.zeros([9, 1], "uint8"))
 
 # 先手陣、後手陣
 B_BLACK = np.zeros([9, 9], "uint8")
-B_BLACK[6,:] = RANK
-B_BLACK[7,:] = RANK
-B_BLACK[8,:] = RANK
+B_BLACK[6, :] = RANK
+B_BLACK[7, :] = RANK
+B_BLACK[8, :] = RANK
 B_WHITE = np.zeros([9, 9], "uint8")
-B_WHITE[0,:] = RANK
-B_WHITE[1,:] = RANK
-B_WHITE[2,:] = RANK
+B_WHITE[0, :] = RANK
+B_WHITE[1, :] = RANK
+B_WHITE[2, :] = RANK
 
 B_k = B_one * piece["k"][0]
 B_r = B_one * piece["r"][0]
@@ -337,7 +337,8 @@ B_xL = B_one * piece["+L"][0]
 B_P = B_one * piece["P"][0]
 B_xP = B_one * piece["+P"][0]
 
-def get_pos(p, ban): # 駒のインデックスのタプルを返す
+
+def get_pos(p, ban):  # 駒のインデックスのタプルを返す
     if p == "k":
         return np.where(B_k == ban)
     elif p == "r":

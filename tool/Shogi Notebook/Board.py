@@ -13,11 +13,11 @@ colmun = ["０", "１", "２", "３", "４", "５", "６", "７", "８", "９"]
 
 def dec_piecenum(piecenum): #駒の数字から駒文字に変更する
     mod = piecenum % 4
-    if mod == 0 or mod == 1: # 成り判定
+    if mod == 0 or mod == 1:  # 成り判定
         piece_base = piecenum
         promote = ""
     else:
-        piece_base = piecenum - 2 # 成りなら2を引く
+        piece_base = piecenum - 2  # 成りなら2を引く
         promote = "+"
     return promote + reverse_piece[piece_base]
 
@@ -26,7 +26,7 @@ def dec_piecenum(piecenum): #駒の数字から駒文字に変更する
 def conv_pos_taple(p):
     result = []
     for (x, y) in zip(p[0], p[1]):
-        result.append((y + 1, x + 1)) # インデックスと符号は1ずれる
+        result.append((y + 1, x + 1))  # インデックスと符号は1ずれる
     return result
 
 
@@ -47,10 +47,10 @@ class Move_Detail:
 class Board:
     # コンストラクタ
     def __init__(self, sfen):
-        self.ban = np.zeros([9, 9], "int8") # インデックスと符号は1つずれるので注意
+        self.ban = np.zeros([9, 9], "int8")  # インデックスと符号は1つずれるので注意
         self.set_sfen(sfen)
 
-    def __clear_koma(self): # 駒台を空にする
+    def __clear_koma(self):  # 駒台を空にする
         self.koma = {
             "r": 0,
             "b": 0,
@@ -81,10 +81,10 @@ class Board:
         return
 
     # 手番周り
-    def get_teban(self): # 手番を返す b(先手) or w(後手)
+    def get_teban(self):  # 手番を返す b(先手) or w(後手)
         return self.teban
 
-    def set_teban(self, new_teban): # 手番を設定、bw以外を与えると手番反転
+    def set_teban(self, new_teban):  # 手番を設定、bw以外を与えると手番反転
         if new_teban == "b" or new_teban == "w":
             self.teban = new_teban
         else:
@@ -93,43 +93,43 @@ class Board:
             else:
                 self.teban = "b"
 
-    def get_sfen_ban(self): # Boardクラスからsfen形式の盤面文字列を生成する
+    def get_sfen_ban(self):  # Boardクラスからsfen形式の盤面文字列を生成する
         sfen = ""
-        for rank in self.ban: # 1行ずつ処理する
+        for rank in self.ban:  # 1行ずつ処理する
             sfen_rank = ""
             blank_pos = 0
-            for pos in rank[::-1]: # 逆順に取り出す
-                if pos == 0: # 空マスならカウントを増やす
+            for pos in rank[::-1]:  # 逆順に取り出す
+                if pos == 0:  # 空マスならカウントを増やす
                     blank_pos += 1
                 else:
-                    if blank_pos >= 1: # 空マスの分をフラッシュする
+                    if blank_pos >= 1:  # 空マスの分をフラッシュする
                         sfen_rank += str(blank_pos)
                         blank_pos = 0
                     sfen_rank += dec_piecenum(pos)
-            if blank_pos >= 1: # 空マスがあればフラッシュする
+            if blank_pos >= 1:  # 空マスがあればフラッシュする
                 sfen_rank += str(blank_pos)
                 blank_pos = 0
-            sfen += (sfen_rank + "/") # 最後の行にもスラッシュが付与されるがreturnで除かれる
+            sfen += (sfen_rank + "/")  # 最後の行にもスラッシュが付与されるがreturnで除かれる
         return sfen[0:-1]
 
-    def set_sfen_ban(self, sfen_ban): # sfen形式の盤面文字列からBoardクラスに値をセットする
-        ranks = sfen_ban.split("/") # 1行ずつ分割
-        promote_flag = False # Trueなら成り駒
+    def set_sfen_ban(self, sfen_ban):  # sfen形式の盤面文字列からBoardクラスに値をセットする
+        ranks = sfen_ban.split("/")  # 1行ずつ分割
+        promote_flag = False  # Trueなら成り駒
         for i, rank in enumerate(ranks):
             temp_rank = [0, 0, 0, 0, 0, 0, 0, 0, 0]
             temp_itr = 8
-            for char in list(rank): # 1行を1文字ずつスキャンする
-                if char.isdigit(): # 数字なら空白マスなので飛ばす
+            for char in list(rank):  # 1行を1文字ずつスキャンする
+                if char.isdigit():  # 数字なら空白マスなので飛ばす
                     temp_itr -= int(char)
-                elif char == "+": # +のとき
+                elif char == "+":  # +のとき
                     promote_flag = True
-                else: # 数字でないとき
-                    temp_rank[temp_itr] = piece[char][0] # 入力文字を対応する駒の整数にして入れる
+                else:  # 数字でないとき
+                    temp_rank[temp_itr] = piece[char][0]  # 入力文字を対応する駒の整数にして入れる
                     if promote_flag:
-                        temp_rank[temp_itr] += 2 # 成り駒は2を足す
+                        temp_rank[temp_itr] += 2  # 成り駒は2を足す
                         promote_flag = False
-                    temp_itr -= 1 # sfenは9→1の順なので符号の数字とは逆順になる
-            self.ban[i] = temp_rank # 1行ずつ盤面に代入する
+                    temp_itr -= 1  # sfenは9→1の順なので符号の数字とは逆順になる
+            self.ban[i] = temp_rank  # 1行ずつ盤面に代入する
         return self.ban
 
     def __enc_koma_string(self, koma, piece_string):
@@ -148,7 +148,7 @@ class Board:
             return piece[piece_string][1]
         return piece[piece_string][1] + row[num]
 
-    def get_sfen_koma(self): # Boardクラスからsfen形式の駒台文字列を生成する
+    def get_sfen_koma(self):  # Boardクラスからsfen形式の駒台文字列を生成する
         temp = ""
         temp += self.__enc_koma_string(self.koma, "R")
         temp += self.__enc_koma_string(self.koma, "B")
@@ -166,28 +166,28 @@ class Board:
         temp += self.__enc_koma_string(self.koma, "p")
         return temp
 
-    def set_sfen_koma(self, sfen_koma): # sfen形式の駒台文字列からBoardクラスに値をセットする
-        self.__clear_koma() # まず駒台を空にする
-        if sfen_koma == "-": # ハイフンなら持ち駒なしということ
+    def set_sfen_koma(self, sfen_koma):  # sfen形式の駒台文字列からBoardクラスに値をセットする
+        self.__clear_koma()  # まず駒台を空にする
+        if sfen_koma == "-":  # ハイフンなら持ち駒なしということ
             return
-        num = 0 # 駒数
-        for char in list(sfen_koma): # 引数を1文字ずつスキャンする
-            if char.isdigit(): # 数字なら
-                if num == 0: # 駒数が0なら数字を代入
+        num = 0  # 駒数
+        for char in list(sfen_koma):  # 引数を1文字ずつスキャンする
+            if char.isdigit():  # 数字なら
+                if num == 0:  # 駒数が0なら数字を代入
                     num = int(char)
-                else: # 駒数が0でないなら2桁の数字ということ
+                else:  # 駒数が0でないなら2桁の数字ということ
                     num = 10 * num + int(char)
-            else: # 数字でないとき
-                if num == 0: # 駒数が0なら1が省略されていたとみなす
+            else:  # 数字でないとき
+                if num == 0:  # 駒数が0なら1が省略されていたとみなす
                     num = 1
-                self.koma[char] = num # 駒台にセットする
-                num = 0 # 駒数を0にクリア
+                self.koma[char] = num  # 駒台にセットする
+                num = 0  # 駒数を0にクリア
 
     def get_sfen(self): # Boardクラスからsfen文字列を生成する
         return "sfen " + self.get_sfen_ban() + " " + self.get_teban() + " " + self.get_sfen_koma() + " " + self.get_count()
 
     def set_sfen(self, sfen): # sfen文字列からBoardクラスに値をセットする
-        sfen_list = sfen.split(" ") # スペースで分割
+        sfen_list = sfen.split(" ")  # スペースで分割
         if sfen_list[0] != "sfen":
             print("先頭がsfenではありません。")
             return
@@ -212,17 +212,17 @@ class Board:
     # 先手の駒か
     def is_black_piece(self, pos):
         num = self.get_num(pos)
-        if num & 1: # 後手の駒
+        if num & 1:  # 後手の駒
             return False
-        elif num != 0: # 先手の駒
+        elif num != 0:  # 先手の駒
             return True
-        return False # 空マス
+        return False  # 空マス
     # 後手の駒か
     def is_white_piece(self, pos):
         num = self.get_num(pos)
-        if num & 1: # 後手の駒
+        if num & 1:  # 後手の駒
             return True
-        return False # 先手の駒 か 空マス
+        return False  # 先手の駒 か 空マス
     # 成り駒か
     def is_promote(self, pos):
         if self.get_num(pos) % 4 >= 2:
@@ -238,7 +238,7 @@ class Board:
     def calc_reverse_num(self, num):
         if num == 0:
             raise ValueError("駒の先後反転を空マスに適用しようとしました")
-        if num & 1: # 後手の駒はmod2==1なので1を引く
+        if num & 1:  # 後手の駒はmod2==1なので1を引く
             return num -1
         return num + 1  # 先手の駒はmod2==0なので1を足す
     def get_reverse_num(self, pos):
@@ -258,7 +258,7 @@ class Board:
     def get_raw_num(self, pos):
         num = self.get_num(pos)
         if num % 4 >= 2:
-            return num - 2 # 成り駒は2を引いておく
+            return num - 2  # 成り駒は2を引いておく
         return num
 
     # 駒のインデックスのタプルを返す
@@ -304,14 +304,14 @@ class Board:
     # 盤上の駒の枚数をカウントする
     def count_piece(self, p, enemy_field=False):
         return len(self.ban[self.ban == piece[p][0]])
-    def count_b(self): # 先手の駒
-        return len(self.ban[np.logical_and(self.ban % 2 == 0, self.ban != 0)]) # 偶数かつ0以外
-    def count_w(self, bitboard=False): # 後手の駒
-        return len(self.ban[self.ban % 2 == 1]) # 奇数
-    def count_b_bitboard(self, bitboard): # 先手の駒をbitboardの場所でのみカウントする
+    def count_b(self):  # 先手の駒
+        return len(self.ban[np.logical_and(self.ban % 2 == 0, self.ban != 0)])  # 偶数かつ0以外
+    def count_w(self, bitboard=False):  # 後手の駒
+        return len(self.ban[self.ban % 2 == 1])  # 奇数
+    def count_b_bitboard(self, bitboard):  # 先手の駒をbitboardの場所でのみカウントする
         ban = np.where(self.ban & bitboard, self.ban, 0)
         return len(ban[np.logical_and(ban % 2 == 0, ban != 0)])
-    def count_w_bitboard(self, bitboard): # 後手の駒をbitboardの場所でのみカウントする
+    def count_w_bitboard(self, bitboard):  # 後手の駒をbitboardの場所でのみカウントする
         ban = np.where(self.ban & bitboard, self.ban, 0)
         return len(ban[ban % 2 == 1])
     # USIプロトコルの指し手文字列を分析します。
@@ -413,7 +413,7 @@ class Board:
                 print(self.get_sfen())
                 print(f"{m[1]}→{m[2]}")
                 raise ValueError("玉を捕獲しようとしました")
-            if get_piece: # 駒を動かす前に取られる駒の情報を保持しておく
+            if get_piece:  # 駒を動かす前に取られる駒の情報を保持しておく
                 m_d.get_piece_promoted = self.is_promote(m[2])
                 m_d.get_piece_origin_str = dec_piecenum(self.get_raw_num(m[2]))
             # 駒を動かす
@@ -423,11 +423,11 @@ class Board:
                 detail = colmun(m[2][0]) + row(m[2][1])
                 detail += piece[m_d.move_piece_str][1]
                  # TODO 上下寄右左などの条件を作成する必要がある
-                if m[3]: # TODO 不成の条件を作成する必要がある
+                if m[3]:  # TODO 不成の条件を作成する必要がある
                     detail += "成"
-            if m[3]: # 駒を成る場合
+            if m[3]:  # 駒を成る場合
                 self.ban[m[2][1] - 1][m[2][0] - 1] = self.get_promoted_num(m[1])
-            else: # 通常の場合
+            else:  # 通常の場合
                 self.ban[m[2][1] - 1][m[2][0] - 1] = self.ban[m[1][1] - 1][m[1][0] - 1]
             self.ban[m[1][1] - 1][m[1][0] - 1] = 0
             # 駒を取得する
@@ -446,8 +446,8 @@ class Board:
                 raise ValueError("指定された駒を持っていません")
             if not self.is_space(m[2]):
                 raise ValueError("駒を打つ場所が空ではありません")
-            self.koma[p] -= 1 # 駒台から駒を1つ減らす
-            self.ban[m[2][1] - 1][m[2][0] - 1] = piece[p][0] # 盤面に駒を置く
+            self.koma[p] -= 1  # 駒台から駒を1つ減らす
+            self.ban[m[2][1] - 1][m[2][0] - 1] = piece[p][0]  # 盤面に駒を置く
             m_d.move_piece_str = p
             # 詳細な棋譜表記生成
             if detail_kif:
@@ -456,8 +456,8 @@ class Board:
                 detail += "打" # TODO 打が入る条件を作成する必要がある
         else:
             raise ValueError("想定されたmoveではありません")
-        self.set_teban("r") # 指し手が進んだので手番変更
-        self.inc_count() # 手数カウントを1増やしておく
+        self.set_teban("r")  # 指し手が進んだので手番変更
+        self.inc_count()  # 手数カウントを1増やしておく
         # 分析した指し手、取得した駒、詳細な棋譜表記のクラスを返す
         if detail_kif:
             m_d.detail = detail
@@ -497,7 +497,7 @@ class Board:
     def __plt_text(self, x, y, char, rot=0):
         plt.text(x, y, char, fontsize = 24, rotation = rot, fontproperties=fp, ha='center', va='center')
     def __plot_ban(self, plt, kato123=False):
-        if kato123: # ひふみんアイでの反転した盤面を作る
+        if kato123:  # ひふみんアイでの反転した盤面を作る
             ban = self.ban[::-1]
             for i, rank in enumerate(ban):
                 ban[i] = rank[::-1]
@@ -505,9 +505,9 @@ class Board:
             ban = self.ban
         offset_x = -0.9
         offset_y = -0.8
-        for i, rank in enumerate(ban): # 1行ずつ処理する
+        for i, rank in enumerate(ban):  # 1行ずつ処理する
             for j, pos in enumerate(rank):
-                if pos != 0: # 空マス以外なら駒の文字を出力する
+                if pos != 0:  # 空マス以外なら駒の文字を出力する
                     char = piece[reverse_piece[pos]][1]
                     if kato123:
                         if pos % 2:
@@ -543,7 +543,7 @@ class Board:
         return temp
 
     def __plot_koma(self, plt, kato123=False):
-        if kato123: # ひふみんアイでは駒台が逆になる
+        if kato123:  # ひふみんアイでは駒台が逆になる
             plt.text(0.05, -0.6, "☖", fontsize = 24, rotation = 0, fontproperties=fp)
             plt.text(-10.02, -8.7, "☗", fontsize = 24, rotation = 180, fontproperties=fp)
             for i, char in enumerate(list(self.__get_koma_b_string(self.koma))):
@@ -566,7 +566,7 @@ class Board:
             plt.fill_between((-pre[0], -pre[0] + 1), -pre[1], -pre[1] + 1, color='#97fef1')
         plt.show()
 
-    def plot123(self, pre=False): # ひふみんアイ
+    def plot123(self, pre=False):  # ひふみんアイ
         self.__plot_common(plt)
         self.__plot_ban(plt, True)
         self.__plot_koma(plt, True)
