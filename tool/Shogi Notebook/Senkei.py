@@ -154,9 +154,6 @@ class RightSilverMethod(SenkeiPartsBase):
                 else:  # 通常形でない
                     self.b_update = False
                     self.state = False
-        if not (self.b_update or self.w_update):  # 先手銀、後手銀の両方が更新不要なら全体の更新フラグも落とす
-            self.update = False
-
         elif self.w_update and m_d.move_piece_str == "s":  # 後手の銀を動かした
             if m_d.pos == (7, 1):  # 居銀解消
                 self.stay = False
@@ -187,6 +184,8 @@ class RightSilverMethod(SenkeiPartsBase):
                 else:  # 通常形でない
                     self.w_update = False
                     self.state = False
+        if not (self.b_update or self.w_update):  # 先手銀、後手銀の両方が更新不要なら全体の更新フラグも落とす
+            self.update = False
 
     def stat_str(self) -> List[str]:
         if not self.state:
@@ -233,19 +232,213 @@ class RightSilverMethod(SenkeiPartsBase):
         return result
 
 
+class RightGoldMethod(SenkeiPartsBase):
+    """角換わりの右金を規定する"""
+    def __init__(self):
+        super().__init__()
+        self.state = True  # 正常形かどうか
+        self.stay = True  # そのままの状態
+        self.update = True
+        self.b_update = True  # 先手金更新フラグ
+        self.b_pos = (4, 9)
+        self.w_update = True  # 後手金更新フラグ
+        self.w_pos = (6, 1)
+
+    def move(self, m_d: Move_Detail):
+        if not self.update:
+            return
+        if m_d.type == "place":  # 駒を打ったならスルー
+            return
+        if self.b_update and m_d.move_piece_str == "G":  # 先手の金を動かした
+            if m_d.pos == (4, 9):  # 居金解消
+                self.stay = False
+                self.b_pos = m_d.moved
+                if m_d.moved == (4, 8):  # 48金
+                    self.b_update = False
+                elif m_d.moved == (5, 8):  # 58金
+                    self.b_update = False
+                else:  # 通常形でない
+                    self.b_update = False
+                    self.state = False
+        elif self.w_update and m_d.move_piece_str == "g":  # 後手の金を動かした
+            if m_d.pos == (6, 1):  # 居金解消
+                self.stay = False
+                self.w_pos = m_d.moved
+                if m_d.moved == (6, 2):  # 62金
+                    self.w_update = False
+                elif m_d.moved == (5, 2):  # 52金
+                    self.w_update = False
+                else:  # 通常形でない
+                    self.w_update = False
+                    self.state = False
+        if not (self.b_update or self.w_update):  # 先手金、後手金の両方が更新不要なら全体の更新フラグも落とす
+            self.update = False
+
+    def stat_str(self) -> List[str]:
+        if not self.state:
+            return ["右金が通常形でない"]
+        result = []
+        if self.b_pos == (4, 9):
+            result.append("先手は49金")
+        elif self.b_pos == (5, 8):
+            result.append("先手は58金")
+        elif self.b_pos == (4, 8):
+            result.append("先手は48金")
+        if self.w_pos == (6, 1):
+            result.append("後手は61金")
+        elif self.w_pos == (5, 2):
+            result.append("後手は52金")
+        elif self.w_pos == (6, 2):
+            result.append("後手は62金")
+        return result
+
+
+class BishopExchange(SenkeiPartsBase):
+    """角交換を規定する"""
+    def __init__(self):
+        super().__init__()
+        self.state = True  # 正常形かどうか
+        self.update = True
+        self.is_exchange = False  # 角交換したか
+        self.b_captured = False  # 先手が角を捕獲した
+        self.w_captured = False  # 後手が角を捕獲した
+        self.b_tezon = 0
+        self.w_tezon = 0
+        self.comment = []
+
+    def move(self, m_d: Move_Detail):
+        if not self.update:
+            return
+        if m_d.type == "place":  # 駒を打ったならスルー
+            return
+        if self.update:
+            if self.w_captured:  # 先手が後手の角を取り返しに行く
+                print("先手が後手の角を取り返しに行く")
+                self.update = False
+                if m_d.move_piece_str == "R":  # 先手が飛を動かした
+                    self.is_exchange = True
+                    self.comment.append("先手向かい飛車")
+                elif m_d.move_piece_str == "G":  # 先手が金を動かした
+                    print("先手が金を動かした")
+                    self.b_tezon += 1
+                    self.is_exchange = True
+                    if m_d.moved == (8, 8):  # 78に戻るために手損することになる
+                        self.comment.append("先手一手損角換わり")
+                    elif m_d.moved == (7, 7):  # 77金型(阪田流)
+                        self.comment.append("先手77金型")
+                    else:
+                        self.state = False
+                elif m_d.move_piece_str == "S":  # 先手が銀を動かした
+                    print("先手が銀を動かした")
+                    self.update = False
+                    self.is_exchange = True
+                    if m_d.moved == (8, 8):  # 後手一手損
+                        self.comment.append("一手損角換わり")
+                    elif m_d.moved == (7, 7):  # 角換わり
+                        self.comment.append("角換わり")
+                    else:
+                        self.state = False
+                elif m_d.move_piece_str == "N":  # 先手が桂を動かした
+                    self.update = False
+                    self.is_exchange = True
+                    self.comment.append("77桂")
+                elif m_d.move_piece_str == "K":  # 先手が玉を動かした
+                    self.update = False
+                    self.is_exchange = True
+                    self.comment.append("後手角交換振り飛車")
+                else:  # 正常形でない
+                    print("先手の動かす駒：正常形でない")
+                    self.update = False
+                    self.state = False
+
+            elif self.b_captured:  # 後手が先手の角を取り返しに行く
+                print("後手が先手の角を取り返しに行く")
+                self.update = False
+                if m_d.move_piece_str == "r":  # 後手が飛を動かした
+                    self.is_exchange = True
+                    self.comment.append("後手向かい飛車")
+                elif m_d.move_piece_str == "g":  # 後手が金を動かした
+                    print("後手が金を動かした")
+                    self.w_tezon += 1
+                    self.is_exchange = True
+                    if m_d.moved == (2, 2):  # 32に戻るために手損することになる
+                        self.comment.append("角換わり")
+                    elif m_d.moved == (3, 3):  # 33金型(阪田流)
+                        self.comment.append("後手33金型")
+                    else:
+                        self.state = False
+                elif m_d.move_piece_str == "s":  # 後手が銀を動かした
+                    print("後手が銀を動かした")
+                    self.update = False
+                    self.is_exchange = True
+                    if m_d.moved == (2, 2):  # 先手一手損
+                        self.comment.append("先手一手損角換わり")
+                    elif m_d.moved == (3, 3):  # 角換わり
+                        self.comment.append("角換わり")
+                    else:
+                        self.state = False
+                elif m_d.move_piece_str == "n":  # 後手が桂を動かした
+                    self.update = False
+                    self.is_exchange = True
+                    self.comment.append("33桂")
+                elif m_d.move_piece_str == "k":  # 後手が玉を動かした
+                    self.update = False
+                    self.is_exchange = True
+                    self.comment.append("先手角交換振り飛車")
+                else:  # 正常形でない
+                    print("後手の動かす駒：正常形でない")
+                    self.update = False
+                    self.state = False
+            elif m_d.move_piece_str == "B":  # 先手の角を動かした
+                print("先手の角を動かした")
+                if not (m_d.moved == (7, 7) or m_d.moved == (3, 3) or m_d.moved == (2, 2)):  # 77、33、22以外に動くと通常形でない
+                    print("77、33、22以外に動くと通常形でない")
+                    self.state = False
+                    self.update = False
+                else:
+                    self.b_tezon += 1
+                    if m_d.get_piece_origin_str == "b":  # 後手の角を捕獲した
+                        print("後手の角を捕獲した")
+                        self.b_captured = True
+            elif m_d.move_piece_str == "b":  # 後手の角を動かした
+                print("後手の角を動かした")
+                if not (m_d.moved == (3, 3) or m_d.moved == (7, 7) or m_d.moved == (8, 8)):  # 33、77、88以外に動くと通常形でない
+                    print("33、77、88以外に動くと通常形でない")
+                    self.state = False
+                    self.update = False
+                else:
+                    self.w_tezon += 1
+                    if m_d.get_piece_origin_str == "B":  # 先手の角を捕獲した
+                        print("先手の角を捕獲した")
+                        self.w_captured = True
+
+    def stat_str(self) -> List[str]:
+        if not self.state:
+            return ["角交換の通常形でない"]
+        tezon = self.b_tezon - self.w_tezon
+        print(f"先手の手損は{tezon}")
+        return self.comment
+
+
 class Senkei:
     def __init__(self):
         self.edge_p36 = EdgeP36()
         self.right_silver_method = RightSilverMethod()
+        self.right_gold_method = RightGoldMethod()
+        self.bishop_exchange = BishopExchange()
 
     def move(self, m_d: Move_Detail):
         self.edge_p36.move(m_d)
         self.right_silver_method.move(m_d)
+        self.right_gold_method.move(m_d)
+        self.bishop_exchange.move(m_d)
 
     def print(self):
-        r1 = self.edge_p36.stat_str()
-        r2 = self.right_silver_method.stat_str()
-        for text in r1:
+        for text in self.edge_p36.stat_str():
             print(text)
-        for text in r2:
+        for text in self.right_silver_method.stat_str():
+            print(text)
+        for text in self.right_gold_method.stat_str():
+            print(text)
+        for text in self.bishop_exchange.stat_str():
             print(text)
