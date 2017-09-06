@@ -16,6 +16,10 @@ class SenkeiPartsBase(metaclass=ABCMeta):  # 戦型用の部分判定を行う�
     def stat_str(self) -> List[str]:
         return [""]
 
+    def print(self):
+        for text in self.stat_str():
+            print(text)
+
 
 class EdgeP36(SenkeiPartsBase):
     """端歩36景を表すクラス"""
@@ -420,25 +424,204 @@ class BishopExchange(SenkeiPartsBase):
         return self.comment
 
 
+class BishopLine(SenkeiPartsBase):
+    """角道の開閉を規定する"""
+    def __init__(self):
+        super().__init__()
+        self.update = True
+        self.p_76 = False
+        self.p_66 = False
+        self.p_34 = False
+        self.p_44 = False
+
+    def move(self, m_d: Move_Detail):
+        if not self.update:
+            return
+        if m_d.type == "place":  # 駒を打ったならスルー
+            return
+        if m_d.move_piece_str == "P" and m_d.pos == (7, 7):  # 76歩
+            self.p_76 = True
+        elif m_d.move_piece_str == "P" and m_d.pos == (6, 7):  # 66歩
+            self.p_66 = True
+        elif m_d.move_piece_str == "p" and m_d.pos == (3, 3):  # 34歩
+            self.p_34 = True
+        elif m_d.move_piece_str == "p" and m_d.pos == (4, 3):  # 44歩
+            self.p_44 = True
+        if self.p_76 and self.p_66 and self.p_34 and self.p_44:
+            self.update = False
+
+    def stat_str(self) -> List[str]:
+        result = []
+        if self.p_76 and self.p_66:
+            result.append("先手は角道クローズ")
+        elif self.p_76 and not self.p_66:
+            result.append("先手は角道オープン")
+        elif not self.p_76 and not self.p_66:
+            result.append("先手は角道不突")
+        if self.p_34 and self.p_44:
+            result.append("後手は角道クローズ")
+        elif self.p_34 and not self.p_44:
+            result.append("後手は角道オープン")
+        elif not self.p_34 and not self.p_44:
+            result.append("後手は角道不突")
+        return result
+
+
+class RookTrace(SenkeiPartsBase):
+    """飛車の軌跡を表すクラス"""
+    def __init__(self):
+        super().__init__()
+        self.state = True
+        self.update = True  # 更新フラグ
+        self.b_update = True  # 先手フラグ
+        self.w_update = True  # 後手フラグ
+        self.b_rook_front = 0  # 先手の2筋の歩をいくつ突いたか(3なら飛車先の歩を切っている)
+        self.w_rook_front = 0  # 後手の8筋の歩をいくつ突いたか(3なら飛車先の歩を切っている)
+        self.b_rook = [(2, 8)]
+        self.w_rook = [(8, 2)]
+
+    def move(self, m_d: Move_Detail):
+        if not self.update:
+            return
+        if m_d.type == "place":  # 駒を打ったならスルー
+            return
+        if m_d.move_piece_str == "P":
+            if m_d.pos == (2, 7):  # 26歩
+                self.b_rook_front = 1
+            elif m_d.pos == (2, 6):  # 25歩
+                self.b_rook_front = 2
+            elif m_d.pos == (2, 5):  # 24歩
+                self.b_rook_front = 3
+        elif m_d.move_piece_str == "p":
+            if m_d.pos == (8, 3):  # 84歩
+                self.w_rook_front = 1
+            elif m_d.pos == (8, 4):  # 85歩
+                self.w_rook_front = 2
+            elif m_d.pos == (8, 5):  # 86歩
+                self.w_rook_front = 3
+        elif m_d.move_piece_str == "R":  # 先手の飛車の移動
+            if m_d.pos == (2, 8) and m_d.moved == (2, 4):  # 24飛と歩を取った
+                self.b_rook.append((2, 4))
+            elif m_d.pos == (2, 4) and m_d.moved == (2, 5):  # 25飛
+                self.b_rook.append((2, 5))
+            elif m_d.pos == (2, 4) and m_d.moved == (2, 6):  # 26飛
+                self.b_rook.append((2, 6))
+            elif m_d.pos == (2, 4) and m_d.moved == (2, 8):  # 28飛
+                self.b_rook.append((2, 8))
+                self.b_update = False
+            elif m_d.pos == (2, 4) and m_d.moved == (3, 4):  # 34飛 (横歩取り)
+                self.b_rook.append((3, 4))
+                return "横歩取り"
+            elif m_d.pos == (2, 4) and m_d.moved == (2, 1):  # 何らかの超急戦
+                self.b_rook.append((2, 1))
+                self.b_update = False
+                self.w_update = False
+            elif m_d.pos == (2, 8) and m_d.moved == (3, 8):  # 38飛
+                self.b_rook.append((3, 8))
+                self.b_update = False
+            elif m_d.pos == (2, 8) and m_d.moved == (4, 8):  # 48飛
+                self.b_rook.append((4, 8))
+                self.b_update = False
+            elif m_d.pos == (2, 8) and m_d.moved == (5, 8):  # 58飛
+                self.b_rook.append((5, 8))
+                self.b_update = False
+            elif m_d.pos == (2, 8) and m_d.moved == (6, 8):  # 68飛
+                self.b_rook.append((6, 8))
+            elif m_d.pos == (2, 8) and m_d.moved == (7, 8):  # 78飛
+                self.b_rook.append((7, 8))
+            elif m_d.pos == (2, 8) and m_d.moved == (8, 8):  # 88飛
+                self.b_rook.append((8, 8))
+                self.b_update = False
+            elif m_d.pos == (6, 8) and m_d.moved == (7, 8):  # 4→3
+                self.b_rook.append((7, 8))
+            elif m_d.pos == (6, 8) and m_d.moved == (8, 8):  # 4→2
+                self.b_rook.append((8, 8))
+                self.b_update = False
+            elif m_d.pos == (7, 8) and m_d.moved == (7, 6):  # 三間飛車浮き飛車
+                self.b_rook.append((7, 6))
+                self.b_update = False
+            elif m_d.pos == (6, 8) and m_d.moved == (6, 6):  # 四間飛車浮き飛車
+                self.b_rook.append((6, 6))
+                self.b_update = False
+            elif m_d.pos == (5, 8) and m_d.moved == (5, 6):  # 中飛車浮き飛車
+                self.b_rook.append((5, 6))
+                self.b_update = False
+        elif m_d.move_piece_str == "r":  # 後手の飛車の移動
+            if m_d.pos == (8, 2) and m_d.moved == (8, 6):  # 86飛と歩を取った
+                self.w_rook.append((8, 6))
+            elif m_d.pos == (8, 6) and m_d.moved == (8, 5):  # 85飛
+                self.w_rook.append((8, 5))
+            elif m_d.pos == (8, 6) and m_d.moved == (8, 4):  # 84飛
+                self.w_rook.append((8, 4))
+            elif m_d.pos == (8, 6) and m_d.moved == (8, 2):  # 82飛
+                self.w_rook.append((8, 2))
+                self.w_update = False
+            elif m_d.pos == (8, 6) and m_d.moved == (7, 6):  # 76飛 (横歩取り)
+                self.w_rook.append((7, 6))
+                return "横歩取り"
+            elif m_d.pos == (8, 6) and m_d.moved == (8, 9):  # 何らかの超急戦
+                self.w_rook.append((8, 9))
+                self.b_update = False
+                self.w_update = False
+            elif m_d.pos == (8, 2) and m_d.moved == (7, 2):  # 72飛
+                self.w_rook.append((7, 2))
+                self.w_update = False
+            elif m_d.pos == (8, 2) and m_d.moved == (6, 2):  # 62飛
+                self.w_rook.append((6, 2))
+                self.w_update = False
+            elif m_d.pos == (8, 2) and m_d.moved == (5, 2):  # 52飛
+                self.w_rook.append((5, 2))
+                self.w_update = False
+            elif m_d.pos == (8, 2) and m_d.moved == (4, 2):  # 42飛
+                self.w_rook.append((4, 2))
+            elif m_d.pos == (8, 2) and m_d.moved == (3, 2):  # 32飛
+                self.w_rook.append((3, 2))
+            elif m_d.pos == (8, 2) and m_d.moved == (2, 2):  # 22飛
+                self.w_rook.append((2, 2))
+                self.w_update = False
+            elif m_d.pos == (4, 2) and m_d.moved == (3, 2):  # 4→3
+                self.w_rook.append((3, 2))
+            elif m_d.pos == (4, 2) and m_d.moved == (2, 2):  # 4→2
+                self.w_rook.append((2, 2))
+                self.w_update = False
+            elif m_d.pos == (3, 2) and m_d.moved == (3, 4):  # 三間飛車浮き飛車
+                self.w_rook.append((3, 4))
+                self.w_update = False
+            elif m_d.pos == (4, 2) and m_d.moved == (4, 4):  # 四間飛車浮き飛車
+                self.w_rook.append((4, 4))
+                self.w_update = False
+            elif m_d.pos == (5, 2) and m_d.moved == (5, 4):  # 中飛車浮き飛車
+                self.w_rook.append((5, 4))
+                self.w_update = False
+
+    def stat_str(self) -> List[str]:
+        if not self.state:
+            return ["飛車の軌跡が通常形でない"]
+        print(f"先手の2筋の歩：{self.b_rook_front}、後手の8筋の歩：{self.w_rook_front}")
+        return [self.b_rook, self.w_rook]
+
+
 class Senkei:
     def __init__(self):
         self.edge_p36 = EdgeP36()
         self.right_silver_method = RightSilverMethod()
         self.right_gold_method = RightGoldMethod()
         self.bishop_exchange = BishopExchange()
+        self.bishop_line = BishopLine()
+        self.rook_trace = RookTrace()
 
     def move(self, m_d: Move_Detail):
         self.edge_p36.move(m_d)
         self.right_silver_method.move(m_d)
         self.right_gold_method.move(m_d)
         self.bishop_exchange.move(m_d)
+        self.bishop_line.move(m_d)
+        self.rook_trace.move(m_d)
 
     def print(self):
-        for text in self.edge_p36.stat_str():
-            print(text)
-        for text in self.right_silver_method.stat_str():
-            print(text)
-        for text in self.right_gold_method.stat_str():
-            print(text)
-        for text in self.bishop_exchange.stat_str():
-            print(text)
+        self.edge_p36.print()
+        self.right_silver_method.print()
+        self.right_gold_method.print()
+        self.bishop_exchange.print()
+        self.bishop_line.print()
+        self.rook_trace.print()
