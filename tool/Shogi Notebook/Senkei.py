@@ -601,27 +601,71 @@ class RookTrace(SenkeiPartsBase):
         return [self.b_rook, self.w_rook]
 
 
+class DoubleStaticRook:  # 相居飛車クラス
+    # 横歩取りと矢倉はさらに専用のルーチンに分割する
+    # 横歩は微妙に形が違う亜種の概念を実装する(ここだけ先後反転盤面をうまく扱う関数を作るかも)
+    # 矢倉は雁木も含めて実装する(阿久津流と米長流を区別できるぐらいの粒度で)
+    # 角換わりは相腰掛銀を細分化するなら専用ルーチンが必要だが現状大丈夫だろう
+    # 相掛かりは横歩取りが完成してから考える(これも亜種だらけなので)
+    # 右玉は？
+    def __init__(self):
+        self.right_silver_method = RightSilverMethod()
+        self.right_gold_method = RightGoldMethod()
+
+    def move(self, m_d: Move_Detail):
+        self.right_silver_method.move(m_d)
+        self.right_gold_method.move(m_d)
+
+    def print(self):
+        self.right_silver_method.print()
+        self.right_gold_method.print()
+
+
+class BlackRangingRook:  # 先手振り飛車クラス
+    # 飛車の筋と角道で大分類する
+    # 囲い判定ルーチンが必要になると思われる
+    # 左玉なども同時に判定したい
+    pass
+
+
+class WhiteRangingRook:  # 後手振り飛車クラス
+    # 先手を反転させたクラスとして実装する
+    pass
+
+
+class DoubleRangingRook:  # 相振り飛車クラス
+    # とりあえず互いの飛車の筋だけの分類でよいと思われる
+    pass
+
+
 class Senkei:
     def __init__(self):
         self.edge_p36 = EdgeP36()
-        self.right_silver_method = RightSilverMethod()
-        self.right_gold_method = RightGoldMethod()
         self.bishop_exchange = BishopExchange()
         self.bishop_line = BishopLine()
         self.rook_trace = RookTrace()
+        # 居飛車と振り飛車のフラグを持って不要になったら落とす
+        self.is_black_static_rook = True  # 飛車が左に行き かつ 玉が右に行くまで保持
+        self.is_white_static_rook = True  # 飛車が左に行き かつ 玉が右に行くまで保持
+        self.is_black_ranging_rook = True  # 先手玉が左に行くか、24歩突くまで保持
+        self.is_white_ranging_rook = True  # 後手玉が左に行くか、86歩突くまで保持
+        self.double_static_rook = DoubleStaticRook()
+        self.black_ranging_rook = BlackRangingRook()
+        self.white_ranging_rook = WhiteRangingRook()
+        self.double_ranging_rook = DoubleRangingRook()
 
     def move(self, m_d: Move_Detail):
         self.edge_p36.move(m_d)
-        self.right_silver_method.move(m_d)
-        self.right_gold_method.move(m_d)
+        if self.is_black_static_rook and self.is_white_static_rook:
+            self.double_static_rook.move(m_d)
         self.bishop_exchange.move(m_d)
         self.bishop_line.move(m_d)
         self.rook_trace.move(m_d)
 
     def print(self):
         self.edge_p36.print()
-        self.right_silver_method.print()
-        self.right_gold_method.print()
+        if self.is_black_static_rook and self.is_white_static_rook:
+            self.double_static_rook.print()
         self.bishop_exchange.print()
         self.bishop_line.print()
         self.rook_trace.print()
