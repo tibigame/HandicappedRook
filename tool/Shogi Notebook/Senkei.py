@@ -467,8 +467,8 @@ class BishopLine(SenkeiPartsBase):
         return result
 
 
-class RookTrace(SenkeiPartsBase):
-    """飛車の軌跡を表すクラス"""
+class KingRookTrace(SenkeiPartsBase):
+    """玉と飛車の軌跡を表すクラス"""
     def __init__(self):
         super().__init__()
         self.state = True
@@ -479,6 +479,126 @@ class RookTrace(SenkeiPartsBase):
         self.w_rook_front = 0  # 後手の8筋の歩をいくつ突いたか(3なら飛車先の歩を切っている)
         self.b_rook = [(2, 8)]
         self.w_rook = [(8, 2)]
+        self.b_king = [(5, 9)]
+        self.w_king = [(5, 1)]
+
+    def __move_black_p(self, m_d: Move_Detail):
+        if m_d.pos == (2, 7):  # 26歩
+            self.b_rook_front = 1
+        elif m_d.pos == (2, 6):  # 25歩
+            self.b_rook_front = 2
+        elif m_d.pos == (2, 5):  # 24歩
+            self.b_rook_front = 3
+
+    def __move_white_p(self, m_d: Move_Detail):
+        if m_d.pos == (8, 3):  # 84歩
+            self.w_rook_front = 1
+        elif m_d.pos == (8, 4):  # 85歩
+            self.w_rook_front = 2
+        elif m_d.pos == (8, 5):  # 86歩
+            self.w_rook_front = 3
+
+    def __move_black_r(self, m_d: Move_Detail):
+        if m_d.pos == (2, 8) and m_d.moved == (2, 4):  # 24飛と歩を取った
+            self.b_rook.append((2, 4))
+        elif m_d.pos == (2, 4) and m_d.moved == (2, 5):  # 25飛
+            self.b_rook.append((2, 5))
+        elif m_d.pos == (2, 4) and m_d.moved == (2, 6):  # 26飛
+            self.b_rook.append((2, 6))
+        elif m_d.pos == (2, 4) and m_d.moved == (2, 8):  # 28飛
+            self.b_rook.append((2, 8))
+            self.b_update = False
+        elif m_d.pos == (2, 4) and m_d.moved == (3, 4):  # 34飛 (横歩取り)
+            self.b_rook.append((3, 4))
+            return "横歩取り"
+        elif m_d.pos == (2, 4) and m_d.moved == (2, 1):  # 何らかの超急戦
+            self.b_rook.append((2, 1))
+            self.b_update = False
+            self.w_update = False
+        elif m_d.pos == (2, 8) and m_d.moved == (3, 8):  # 38飛
+            self.b_rook.append((3, 8))
+            self.b_update = False
+        elif m_d.pos == (2, 8) and m_d.moved == (4, 8):  # 48飛
+            self.b_rook.append((4, 8))
+            self.b_update = False
+        elif m_d.pos == (2, 8) and m_d.moved == (5, 8):  # 58飛
+            self.b_rook.append((5, 8))
+            self.b_update = False
+        elif m_d.pos == (2, 8) and m_d.moved == (6, 8):  # 68飛
+            self.b_rook.append((6, 8))
+        elif m_d.pos == (2, 8) and m_d.moved == (7, 8):  # 78飛
+            self.b_rook.append((7, 8))
+        elif m_d.pos == (2, 8) and m_d.moved == (8, 8):  # 88飛
+            self.b_rook.append((8, 8))
+            self.b_update = False
+        elif m_d.pos == (6, 8) and m_d.moved == (7, 8):  # 4→3
+            self.b_rook.append((7, 8))
+        elif m_d.pos == (6, 8) and m_d.moved == (8, 8):  # 4→2
+            self.b_rook.append((8, 8))
+            self.b_update = False
+        elif m_d.pos == (7, 8) and m_d.moved == (7, 6):  # 三間飛車浮き飛車
+            self.b_rook.append((7, 6))
+            self.b_update = False
+        elif m_d.pos == (6, 8) and m_d.moved == (6, 6):  # 四間飛車浮き飛車
+            self.b_rook.append((6, 6))
+            self.b_update = False
+        elif m_d.pos == (5, 8) and m_d.moved == (5, 6):  # 中飛車浮き飛車
+            self.b_rook.append((5, 6))
+            self.b_update = False
+
+    def __move_white_r(self, m_d: Move_Detail):
+        if m_d.pos == (8, 2) and m_d.moved == (8, 6):  # 86飛と歩を取った
+            self.w_rook.append((8, 6))
+        elif m_d.pos == (8, 6) and m_d.moved == (8, 5):  # 85飛
+            self.w_rook.append((8, 5))
+        elif m_d.pos == (8, 6) and m_d.moved == (8, 4):  # 84飛
+            self.w_rook.append((8, 4))
+        elif m_d.pos == (8, 6) and m_d.moved == (8, 2):  # 82飛
+            self.w_rook.append((8, 2))
+            self.w_update = False
+        elif m_d.pos == (8, 6) and m_d.moved == (7, 6):  # 76飛 (横歩取り)
+            self.w_rook.append((7, 6))
+            return "横歩取り"
+        elif m_d.pos == (8, 6) and m_d.moved == (8, 9):  # 何らかの超急戦
+            self.w_rook.append((8, 9))
+            self.b_update = False
+            self.w_update = False
+        elif m_d.pos == (8, 2) and m_d.moved == (7, 2):  # 72飛
+            self.w_rook.append((7, 2))
+            self.w_update = False
+        elif m_d.pos == (8, 2) and m_d.moved == (6, 2):  # 62飛
+            self.w_rook.append((6, 2))
+            self.w_update = False
+        elif m_d.pos == (8, 2) and m_d.moved == (5, 2):  # 52飛
+            self.w_rook.append((5, 2))
+            self.w_update = False
+        elif m_d.pos == (8, 2) and m_d.moved == (4, 2):  # 42飛
+            self.w_rook.append((4, 2))
+        elif m_d.pos == (8, 2) and m_d.moved == (3, 2):  # 32飛
+            self.w_rook.append((3, 2))
+        elif m_d.pos == (8, 2) and m_d.moved == (2, 2):  # 22飛
+            self.w_rook.append((2, 2))
+            self.w_update = False
+        elif m_d.pos == (4, 2) and m_d.moved == (3, 2):  # 4→3
+            self.w_rook.append((3, 2))
+        elif m_d.pos == (4, 2) and m_d.moved == (2, 2):  # 4→2
+            self.w_rook.append((2, 2))
+            self.w_update = False
+        elif m_d.pos == (3, 2) and m_d.moved == (3, 4):  # 三間飛車浮き飛車
+            self.w_rook.append((3, 4))
+            self.w_update = False
+        elif m_d.pos == (4, 2) and m_d.moved == (4, 4):  # 四間飛車浮き飛車
+            self.w_rook.append((4, 4))
+            self.w_update = False
+        elif m_d.pos == (5, 2) and m_d.moved == (5, 4):  # 中飛車浮き飛車
+            self.w_rook.append((5, 4))
+            self.w_update = False
+
+    def __move_black_k(self, m_d: Move_Detail):
+        self.b_king.append(m_d.moved)
+
+    def __move_white_k(self, m_d: Move_Detail):
+        self.w_king.append(m_d.moved)
 
     def move(self, m_d: Move_Detail):
         if not self.update:
@@ -486,119 +606,73 @@ class RookTrace(SenkeiPartsBase):
         if m_d.type == "place":  # 駒を打ったならスルー
             return
         if m_d.move_piece_str == "P":
-            if m_d.pos == (2, 7):  # 26歩
-                self.b_rook_front = 1
-            elif m_d.pos == (2, 6):  # 25歩
-                self.b_rook_front = 2
-            elif m_d.pos == (2, 5):  # 24歩
-                self.b_rook_front = 3
+            return self.__move_black_p(m_d)
         elif m_d.move_piece_str == "p":
-            if m_d.pos == (8, 3):  # 84歩
-                self.w_rook_front = 1
-            elif m_d.pos == (8, 4):  # 85歩
-                self.w_rook_front = 2
-            elif m_d.pos == (8, 5):  # 86歩
-                self.w_rook_front = 3
-        elif m_d.move_piece_str == "R":  # 先手の飛車の移動
-            if m_d.pos == (2, 8) and m_d.moved == (2, 4):  # 24飛と歩を取った
-                self.b_rook.append((2, 4))
-            elif m_d.pos == (2, 4) and m_d.moved == (2, 5):  # 25飛
-                self.b_rook.append((2, 5))
-            elif m_d.pos == (2, 4) and m_d.moved == (2, 6):  # 26飛
-                self.b_rook.append((2, 6))
-            elif m_d.pos == (2, 4) and m_d.moved == (2, 8):  # 28飛
-                self.b_rook.append((2, 8))
-                self.b_update = False
-            elif m_d.pos == (2, 4) and m_d.moved == (3, 4):  # 34飛 (横歩取り)
-                self.b_rook.append((3, 4))
-                return "横歩取り"
-            elif m_d.pos == (2, 4) and m_d.moved == (2, 1):  # 何らかの超急戦
-                self.b_rook.append((2, 1))
-                self.b_update = False
-                self.w_update = False
-            elif m_d.pos == (2, 8) and m_d.moved == (3, 8):  # 38飛
-                self.b_rook.append((3, 8))
-                self.b_update = False
-            elif m_d.pos == (2, 8) and m_d.moved == (4, 8):  # 48飛
-                self.b_rook.append((4, 8))
-                self.b_update = False
-            elif m_d.pos == (2, 8) and m_d.moved == (5, 8):  # 58飛
-                self.b_rook.append((5, 8))
-                self.b_update = False
-            elif m_d.pos == (2, 8) and m_d.moved == (6, 8):  # 68飛
-                self.b_rook.append((6, 8))
-            elif m_d.pos == (2, 8) and m_d.moved == (7, 8):  # 78飛
-                self.b_rook.append((7, 8))
-            elif m_d.pos == (2, 8) and m_d.moved == (8, 8):  # 88飛
-                self.b_rook.append((8, 8))
-                self.b_update = False
-            elif m_d.pos == (6, 8) and m_d.moved == (7, 8):  # 4→3
-                self.b_rook.append((7, 8))
-            elif m_d.pos == (6, 8) and m_d.moved == (8, 8):  # 4→2
-                self.b_rook.append((8, 8))
-                self.b_update = False
-            elif m_d.pos == (7, 8) and m_d.moved == (7, 6):  # 三間飛車浮き飛車
-                self.b_rook.append((7, 6))
-                self.b_update = False
-            elif m_d.pos == (6, 8) and m_d.moved == (6, 6):  # 四間飛車浮き飛車
-                self.b_rook.append((6, 6))
-                self.b_update = False
-            elif m_d.pos == (5, 8) and m_d.moved == (5, 6):  # 中飛車浮き飛車
-                self.b_rook.append((5, 6))
-                self.b_update = False
-        elif m_d.move_piece_str == "r":  # 後手の飛車の移動
-            if m_d.pos == (8, 2) and m_d.moved == (8, 6):  # 86飛と歩を取った
-                self.w_rook.append((8, 6))
-            elif m_d.pos == (8, 6) and m_d.moved == (8, 5):  # 85飛
-                self.w_rook.append((8, 5))
-            elif m_d.pos == (8, 6) and m_d.moved == (8, 4):  # 84飛
-                self.w_rook.append((8, 4))
-            elif m_d.pos == (8, 6) and m_d.moved == (8, 2):  # 82飛
-                self.w_rook.append((8, 2))
-                self.w_update = False
-            elif m_d.pos == (8, 6) and m_d.moved == (7, 6):  # 76飛 (横歩取り)
-                self.w_rook.append((7, 6))
-                return "横歩取り"
-            elif m_d.pos == (8, 6) and m_d.moved == (8, 9):  # 何らかの超急戦
-                self.w_rook.append((8, 9))
-                self.b_update = False
-                self.w_update = False
-            elif m_d.pos == (8, 2) and m_d.moved == (7, 2):  # 72飛
-                self.w_rook.append((7, 2))
-                self.w_update = False
-            elif m_d.pos == (8, 2) and m_d.moved == (6, 2):  # 62飛
-                self.w_rook.append((6, 2))
-                self.w_update = False
-            elif m_d.pos == (8, 2) and m_d.moved == (5, 2):  # 52飛
-                self.w_rook.append((5, 2))
-                self.w_update = False
-            elif m_d.pos == (8, 2) and m_d.moved == (4, 2):  # 42飛
-                self.w_rook.append((4, 2))
-            elif m_d.pos == (8, 2) and m_d.moved == (3, 2):  # 32飛
-                self.w_rook.append((3, 2))
-            elif m_d.pos == (8, 2) and m_d.moved == (2, 2):  # 22飛
-                self.w_rook.append((2, 2))
-                self.w_update = False
-            elif m_d.pos == (4, 2) and m_d.moved == (3, 2):  # 4→3
-                self.w_rook.append((3, 2))
-            elif m_d.pos == (4, 2) and m_d.moved == (2, 2):  # 4→2
-                self.w_rook.append((2, 2))
-                self.w_update = False
-            elif m_d.pos == (3, 2) and m_d.moved == (3, 4):  # 三間飛車浮き飛車
-                self.w_rook.append((3, 4))
-                self.w_update = False
-            elif m_d.pos == (4, 2) and m_d.moved == (4, 4):  # 四間飛車浮き飛車
-                self.w_rook.append((4, 4))
-                self.w_update = False
-            elif m_d.pos == (5, 2) and m_d.moved == (5, 4):  # 中飛車浮き飛車
-                self.w_rook.append((5, 4))
-                self.w_update = False
+            return self.__move_white_p(m_d)
+        elif m_d.move_piece_str == "R":
+            return self.__move_black_r(m_d)
+        elif m_d.move_piece_str == "r":
+            return self.__move_white_r(m_d)
+        elif m_d.move_piece_str == "K":
+            return self.__move_black_k(m_d)
+        elif m_d.move_piece_str == "k":
+            return self.__move_white_k(m_d)
 
     def stat_str(self) -> List[str]:
         if not self.state:
             return ["飛車の軌跡が通常形でない"]
-        print(f"先手の2筋の歩：{self.b_rook_front}、後手の8筋の歩：{self.w_rook_front}")
-        return [self.b_rook, self.w_rook]
+        return [
+            f"先手{self.check_b()}",
+            f"後手{self.check_w()}"
+        ]
+
+    def check_b(self):
+        if self.b_rook_front == 3:
+            return "横歩取り・相掛かり"
+        if self.b_rook_front >= 1:
+            if self.b_king[-1] == (5, 8) or self.b_king[-1][0] >= 6:
+                return "居飛車"
+            elif self.b_king[-1][0] <= 4:
+                return "居飛車右玉・陽動振り飛車"
+        if len(self.b_rook) <= 1:
+            if self.b_king[-1] == (5, 8) or self.b_king[-1][0] >= 6:
+                return "居飛車模様"
+            return
+        if self.b_rook[1] == (5, 8) and not self.b_rook[-1] == (2, 8):
+            if self.b_king[-1][0] >= 6:
+                return "中飛車左"
+            elif self.b_king[-1][0] <= 4:
+                return "中飛車右"
+        if self.b_rook[1] == (6, 8):
+            return "四間飛車"
+        if self.b_rook[1] == (7, 8):
+            return "三間飛車"
+        if self.b_rook[1] == (8, 8):
+            return "向かい飛車"
+
+    def check_w(self):
+        if self.w_rook_front == 3:
+            return "横歩取り・相掛かり"
+        if self.w_rook_front >= 1:
+            if self.w_king[-1] == (5, 2) or self.w_king[-1][0] <= 4:
+                return "居飛車"
+            elif self.w_king[-1][0] >= 6:
+                return "居飛車右玉・陽動振り飛車"
+        if len(self.w_rook) <= 1:
+            if self.w_king[-1] == (5, 2) or self.w_king[-1][0] <= 4:
+                return "居飛車模様"
+            return
+        if self.w_rook[1] == (5, 2) and not self.w_rook[-1] == (8, 2):
+            if self.w_king[-1][0] <= 4:
+                return "中飛車左"
+            elif self.w_king[-1][0] >= 6:
+                return "中飛車右"
+        if self.w_rook[1] == (4, 2):
+            return "四間飛車"
+        if self.w_rook[1] == (3, 2):
+            return "三間飛車"
+        if self.w_rook[1] == (2, 2):
+            return "向かい飛車"
 
 
 class DoubleStaticRook:  # 相居飛車クラス
@@ -643,7 +717,7 @@ class Senkei:
         self.edge_p36 = EdgeP36()
         self.bishop_exchange = BishopExchange()
         self.bishop_line = BishopLine()
-        self.rook_trace = RookTrace()
+        self.rook_trace = KingRookTrace()
         # 居飛車と振り飛車のフラグを持って不要になったら落とす
         self.is_black_static_rook = True  # 飛車が左に行き かつ 玉が右に行くまで保持
         self.is_white_static_rook = True  # 飛車が左に行き かつ 玉が右に行くまで保持
@@ -653,14 +727,37 @@ class Senkei:
         self.black_ranging_rook = BlackRangingRook()
         self.white_ranging_rook = WhiteRangingRook()
         self.double_ranging_rook = DoubleRangingRook()
+        self.black_str = None
+        self.white_str = None
 
-    def move(self, m_d: Move_Detail):
+    def move(self, m_d: Move_Detail, tesuu=1):
         self.edge_p36.move(m_d)
         if self.is_black_static_rook and self.is_white_static_rook:
             self.double_static_rook.move(m_d)
         self.bishop_exchange.move(m_d)
         self.bishop_line.move(m_d)
         self.rook_trace.move(m_d)
+        if tesuu > 10:
+            [b, w] = self.rook_trace.stat_str()
+            if b in {"先手居飛車", "先手横歩取り・相掛かり", "先手居飛車右玉・陽動振り飛車", "先手中飛車左"}:
+                self.is_black_ranging_rook = False
+                self.black_str = b
+            elif b in {"先手中飛車右", "先手四間飛車", "先手三間飛車", "先手向かい飛車"}:
+                self.is_black_static_rook = False
+                self.black_str = b
+            if w in {"後手居飛車", "後手横歩取り・相掛かり", "後手居飛車右玉・陽動振り飛車", "後手中飛車左"}:
+                self.is_white_ranging_rook = False
+                self.white_str = w
+            elif w in {"後手中飛車右", "後手四間飛車", "後手三間飛車", "後手向かい飛車"}:
+                self.is_white_static_rook = False
+                self.white_str = w
+            if tesuu > 40:
+                if b == "先手居飛車模様":
+                    self.is_black_ranging_rook = False
+                    self.black_str = b
+                if w == "後手居飛車模様":
+                    self.is_white_ranging_rook = False
+                    self.white_str = w
 
     def print(self):
         self.edge_p36.print()
@@ -669,3 +766,12 @@ class Senkei:
         self.bishop_exchange.print()
         self.bishop_line.print()
         self.rook_trace.print()
+        if self.black_str and self.white_str:
+            print(f"{self.black_str}")
+            print(f"{self.white_str}")
+
+    def test(self):
+        b = self.rook_trace.check_b()
+        w = self.rook_trace.check_w()
+        if b and w:
+            print(f"先手{b}、後手{w}")
