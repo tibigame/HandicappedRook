@@ -1,6 +1,8 @@
 ﻿from typing import List
 from abc import ABCMeta, abstractmethod
 from Board import Move_Detail
+from util import xor
+from util import d_print
 
 
 class SenkeiPartsBase(metaclass=ABCMeta):  # 戦型用の部分判定を行うクラスの基底クラス
@@ -713,7 +715,7 @@ class DoubleRangingRook:  # 相振り飛車クラス
 
 
 class Senkei:
-    def __init__(self):
+    def __init__(self, debug=False):
         self.edge_p36 = EdgeP36()
         self.bishop_exchange = BishopExchange()
         self.bishop_line = BishopLine()
@@ -729,6 +731,11 @@ class Senkei:
         self.double_ranging_rook = DoubleRangingRook()
         self.black_str = None
         self.white_str = None
+        self.debug = debug
+
+    # デバッグプリント用
+    def __dprint(self, string: str):
+        d_print(string, is_debug=self.debug)
 
     def move(self, m_d: Move_Detail, tesuu=1):
         self.edge_p36.move(m_d)
@@ -744,13 +751,13 @@ class Senkei:
                 self.black_str = b
             elif b in {"先手中飛車右", "先手四間飛車", "先手三間飛車", "先手向かい飛車"}:
                 self.is_black_static_rook = False
-                self.black_str = b
+                self.black_str = "先手中飛車" if b == "先手中飛車左" else b
             if w in {"後手居飛車", "後手横歩取り・相掛かり", "後手居飛車右玉・陽動振り飛車", "後手中飛車左"}:
                 self.is_white_ranging_rook = False
                 self.white_str = w
             elif w in {"後手中飛車右", "後手四間飛車", "後手三間飛車", "後手向かい飛車"}:
                 self.is_white_static_rook = False
-                self.white_str = w
+                self.white_str = "後手中飛車" if w == "後手中飛車右" else w
             if tesuu > 40:
                 if b == "先手居飛車模様":
                     self.is_black_ranging_rook = False
@@ -775,3 +782,38 @@ class Senkei:
         w = self.rook_trace.check_w()
         if b and w:
             print(f"先手{b}、後手{w}")
+
+    def get_large_classification(self):
+        if not xor(self.is_black_static_rook, self.is_black_ranging_rook):
+            self.__dprint("先手が居飛車か振り飛車か未確定")
+        elif not xor(self.is_white_static_rook, self.is_white_ranging_rook):
+            self.__dprint("後手が居飛車か振り飛車か未確定")
+        elif self.is_black_static_rook and self.is_white_static_rook:
+            self.__dprint("相居飛車")
+            if self.bishop_exchange.is_exchange:  # 角交換が行われた
+                self.__dprint("角換わり")
+            elif self.rook_trace.b_rook[1] == (2, 4) or self.rook_trace.w_rook[1] == (8, 6):
+                if self.rook_trace.b_rook[2] == (3, 4):
+                    self.__dprint("横歩取り")
+                elif self.rook_trace.w_rook[2] == (7, 6):
+                    self.__dprint("後手横歩取り")  # ひとまず先後分けておく
+                else:
+                    self.__dprint("相掛かり")
+            # 矢倉雁木は左銀の判定ルーチンを入れる
+            else:
+                self.__dprint("相居飛車その他の戦型")
+        elif self.is_black_ranging_rook and self.is_white_ranging_rook:
+            self.__dprint("相振り飛車")
+            self.__dprint(self.black_str + self.white_str)
+        elif self.is_black_static_rook and self.is_white_ranging_rook:
+            if self.bishop_exchange.is_exchange:  # 角交換が行われた
+                self.__dprint("後手角交換振り飛車")
+            else:
+                self.__dprint("後手振り飛車")
+            self.__dprint(self.white_str)
+        elif self.is_black_ranging_rook and self.is_white_static_rook:
+            if self.bishop_exchange.is_exchange:  # 角交換が行われた
+                self.__dprint("先手角交換振り飛車")
+            else:
+                self.__dprint("先手振り飛車")
+            self.__dprint(self.black_str)
