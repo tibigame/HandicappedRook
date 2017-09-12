@@ -1,6 +1,8 @@
 import subprocess
 import time
 import os
+from util import d_print
+
 
 class Info:
     def __init__(self, info_str):
@@ -88,8 +90,7 @@ class Engine:
 
     # デバッグプリント用
     def __dprint(self, string: str):
-        if self.debug:
-            print(f"[Debug] {string}")
+        d_print(string, is_debug=self.debug)
 
     # エンジンにコマンド列を送る
     def __stdin(self, cmd: str):

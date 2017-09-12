@@ -8,7 +8,7 @@ from PieceDistribution import PieceDistribution
 from PieceDistribution import get_piece_value
 from BitBoard import BitBoard
 from BitBoard import reverse_piece
-
+from util import xor
 
 kifu_option_test = {
     "title": "",
@@ -20,17 +20,10 @@ kifu_option_test = {
 }
 
 
-def xor(x: bool, y: bool)-> bool:
-    """排他的論理和"""
-    if (x == True and y == True) or (x == False and y == False):
-        return False
-    return True
-
-
 def calc_center(list_: object) -> (float, float):
     """2変数タプルのリスト列で表現されたデータから重心を求める(ただの平均値)"""
-    x_  = 0.0
-    y_  = 0.0
+    x_ = 0.0
+    y_ = 0.0
     count = float(len(list_))
     for (x, y) in list_:
         x_ += x
@@ -315,7 +308,7 @@ class Kifu:
 
     def plot_prog(self):
         """進行度をプロットする"""
-        plt.figure(figsize=(14, 8)) # サイズ
+        plt.figure(figsize=(14, 8))  # サイズ
         plt.ylim((0, 100))  # 進行度は0-100%
         plt.plot(self.stat_progress, label="progress")  # 進行度のグラフをプロット
         plt.xlabel("tesuu")
