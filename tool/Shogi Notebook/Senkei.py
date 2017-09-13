@@ -301,7 +301,7 @@ class RightGoldMethod(SenkeiPartsBase):
 
 class BishopExchange(SenkeiPartsBase):
     """角交換を規定する"""
-    def __init__(self):
+    def __init__(self, debug=False):
         super().__init__()
         self.state = True  # 正常形かどうか
         self.update = True
@@ -311,6 +311,11 @@ class BishopExchange(SenkeiPartsBase):
         self.b_tezon = 0
         self.w_tezon = 0
         self.comment = []
+        self.debug = debug
+
+    # デバッグプリント用
+    def __dprint(self, string: str):
+        d_print(string, is_debug=self.debug)
 
     def move(self, m_d: Move_Detail):
         if not self.update:
@@ -319,13 +324,13 @@ class BishopExchange(SenkeiPartsBase):
             return
         if self.update:
             if self.w_captured:  # 先手が後手の角を取り返しに行く
-                print("先手が後手の角を取り返しに行く")
+                self.__dprint("先手が後手の角を取り返しに行く")
                 self.update = False
                 if m_d.move_piece_str == "R":  # 先手が飛を動かした
                     self.is_exchange = True
                     self.comment.append("先手向かい飛車")
                 elif m_d.move_piece_str == "G":  # 先手が金を動かした
-                    print("先手が金を動かした")
+                    self.__dprint("先手が金を動かした")
                     self.b_tezon += 1
                     self.is_exchange = True
                     if m_d.moved == (8, 8):  # 78に戻るために手損することになる
@@ -335,7 +340,7 @@ class BishopExchange(SenkeiPartsBase):
                     else:
                         self.state = False
                 elif m_d.move_piece_str == "S":  # 先手が銀を動かした
-                    print("先手が銀を動かした")
+                    self.__dprint("先手が銀を動かした")
                     self.update = False
                     self.is_exchange = True
                     if m_d.moved == (8, 8):  # 後手一手損
@@ -353,18 +358,18 @@ class BishopExchange(SenkeiPartsBase):
                     self.is_exchange = True
                     self.comment.append("後手角交換振り飛車")
                 else:  # 正常形でない
-                    print("先手の動かす駒：正常形でない")
+                    self.__dprint("先手の動かす駒：正常形でない")
                     self.update = False
                     self.state = False
 
             elif self.b_captured:  # 後手が先手の角を取り返しに行く
-                print("後手が先手の角を取り返しに行く")
+                self.__dprint("後手が先手の角を取り返しに行く")
                 self.update = False
                 if m_d.move_piece_str == "r":  # 後手が飛を動かした
                     self.is_exchange = True
                     self.comment.append("後手向かい飛車")
                 elif m_d.move_piece_str == "g":  # 後手が金を動かした
-                    print("後手が金を動かした")
+                    self.__dprint("後手が金を動かした")
                     self.w_tezon += 1
                     self.is_exchange = True
                     if m_d.moved == (2, 2):  # 32に戻るために手損することになる
@@ -374,7 +379,7 @@ class BishopExchange(SenkeiPartsBase):
                     else:
                         self.state = False
                 elif m_d.move_piece_str == "s":  # 後手が銀を動かした
-                    print("後手が銀を動かした")
+                    self.__dprint("後手が銀を動かした")
                     self.update = False
                     self.is_exchange = True
                     if m_d.moved == (2, 2):  # 先手一手損
@@ -392,37 +397,37 @@ class BishopExchange(SenkeiPartsBase):
                     self.is_exchange = True
                     self.comment.append("先手角交換振り飛車")
                 else:  # 正常形でない
-                    print("後手の動かす駒：正常形でない")
+                    self.__dprint("後手の動かす駒：正常形でない")
                     self.update = False
                     self.state = False
             elif m_d.move_piece_str == "B":  # 先手の角を動かした
-                print("先手の角を動かした")
+                self.__dprint("先手の角を動かした")
                 if not (m_d.moved == (7, 7) or m_d.moved == (3, 3) or m_d.moved == (2, 2)):  # 77、33、22以外に動くと通常形でない
-                    print("77、33、22以外に動くと通常形でない")
+                    self.__dprint("77、33、22以外に動くと通常形でない")
                     self.state = False
                     self.update = False
                 else:
                     self.b_tezon += 1
                     if m_d.get_piece_origin_str == "b":  # 後手の角を捕獲した
-                        print("後手の角を捕獲した")
+                        self.__dprint("後手の角を捕獲した")
                         self.b_captured = True
             elif m_d.move_piece_str == "b":  # 後手の角を動かした
-                print("後手の角を動かした")
+                self.__dprint("後手の角を動かした")
                 if not (m_d.moved == (3, 3) or m_d.moved == (7, 7) or m_d.moved == (8, 8)):  # 33、77、88以外に動くと通常形でない
-                    print("33、77、88以外に動くと通常形でない")
+                    self.__dprint("33、77、88以外に動くと通常形でない")
                     self.state = False
                     self.update = False
                 else:
                     self.w_tezon += 1
                     if m_d.get_piece_origin_str == "B":  # 先手の角を捕獲した
-                        print("先手の角を捕獲した")
+                        self.__dprint("先手の角を捕獲した")
                         self.w_captured = True
 
     def stat_str(self) -> List[str]:
         if not self.state:
             return ["角交換の通常形でない"]
         tezon = self.b_tezon - self.w_tezon
-        print(f"先手の手損は{tezon}")
+        self.__dprint(f"先手の手損は{tezon}")
         return self.comment
 
 
@@ -786,34 +791,50 @@ class Senkei:
     def get_large_classification(self):
         if not xor(self.is_black_static_rook, self.is_black_ranging_rook):
             self.__dprint("先手が居飛車か振り飛車か未確定")
+            return "その他の戦型"
         elif not xor(self.is_white_static_rook, self.is_white_ranging_rook):
             self.__dprint("後手が居飛車か振り飛車か未確定")
+            return "その他の戦型"
         elif self.is_black_static_rook and self.is_white_static_rook:
             self.__dprint("相居飛車")
             if self.bishop_exchange.is_exchange:  # 角交換が行われた
                 self.__dprint("角換わり")
+                return "角換わり"
             elif self.rook_trace.b_rook[1] == (2, 4) or self.rook_trace.w_rook[1] == (8, 6):
                 if self.rook_trace.b_rook[2] == (3, 4):
                     self.__dprint("横歩取り")
+                    return "横歩取り"
                 elif self.rook_trace.w_rook[2] == (7, 6):
                     self.__dprint("後手横歩取り")  # ひとまず先後分けておく
+                    return "後手横歩取り"
                 else:
                     self.__dprint("相掛かり")
+                    return "相掛かり"
             # 矢倉雁木は左銀の判定ルーチンを入れる
             else:
                 self.__dprint("相居飛車その他の戦型")
+                return "相居飛車その他の戦型"
         elif self.is_black_ranging_rook and self.is_white_ranging_rook:
             self.__dprint("相振り飛車")
             self.__dprint(self.black_str + self.white_str)
+            return self.black_str + self.white_str
         elif self.is_black_static_rook and self.is_white_ranging_rook:
             if self.bishop_exchange.is_exchange:  # 角交換が行われた
                 self.__dprint("後手角交換振り飛車")
+                self.__dprint(self.white_str)
+                return f"後手角交換{self.white_str[2:]}"
             else:
-                self.__dprint("後手振り飛車")
-            self.__dprint(self.white_str)
+                self.__dprint("後手ノーマル振り飛車")
+                self.__dprint(self.white_str)
+                return f"後手ノーマル{self.white_str[2:]}"
         elif self.is_black_ranging_rook and self.is_white_static_rook:
             if self.bishop_exchange.is_exchange:  # 角交換が行われた
                 self.__dprint("先手角交換振り飛車")
+                self.__dprint(self.black_str)
+                return f"先手角交換{self.black_str[2:]}"
             else:
-                self.__dprint("先手振り飛車")
-            self.__dprint(self.black_str)
+                self.__dprint("先手ノーマル振り飛車")
+                self.__dprint(self.black_str)
+                return f"先手ノーマル{self.black_str[2:]}"
+
+
