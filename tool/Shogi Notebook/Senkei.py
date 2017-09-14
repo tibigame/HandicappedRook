@@ -5,6 +5,16 @@ from util import xor
 from util import d_print
 
 
+class SenkeiClassify:
+    def __init__(self):
+        self.kingdom = None  # kingdom 振り飛車とか
+        self.phylum = None  # phylum 角換わりとか横歩取り
+        self.subphylum = None  # subphylum 一手損角換わりとか
+        self.order = None  # order 角換わり先手棒銀後手腰掛け銀とか矢倉▲４六銀△３七桂とか
+        self.family = None  # family 宮田新手・Ponanza新手△３七銀とか
+        self.forms = None  # forms 横歩取り▲１六歩△１四歩型とか
+
+
 class SenkeiPartsBase(metaclass=ABCMeta):  # 戦型用の部分判定を行うクラスの基底クラス
     @abstractmethod
     def __init__(self):
@@ -736,6 +746,7 @@ class Senkei:
         self.double_ranging_rook = DoubleRangingRook()
         self.black_str = None
         self.white_str = None
+        self.senkei_classify = SenkeiClassify()
         self.debug = debug
 
     # デバッグプリント用
@@ -791,50 +802,55 @@ class Senkei:
     def get_large_classification(self):
         if not xor(self.is_black_static_rook, self.is_black_ranging_rook):
             self.__dprint("先手が居飛車か振り飛車か未確定")
-            return "その他の戦型"
+            self.senkei_classify.kingdom = "その他"
+            self.senkei_classify.phylum = "その他の戦型"
         elif not xor(self.is_white_static_rook, self.is_white_ranging_rook):
             self.__dprint("後手が居飛車か振り飛車か未確定")
-            return "その他の戦型"
+            self.senkei_classify.kingdom = "その他"
+            self.senkei_classify.phylum = "その他の戦型"
         elif self.is_black_static_rook and self.is_white_static_rook:
             self.__dprint("相居飛車")
+            self.senkei_classify.kingdom = "相居飛車"
             if self.bishop_exchange.is_exchange:  # 角交換が行われた
                 self.__dprint("角換わり")
-                return "角換わり"
+                self.senkei_classify.phylum = "角換わり"
             elif self.rook_trace.b_rook[1] == (2, 4) or self.rook_trace.w_rook[1] == (8, 6):
                 if self.rook_trace.b_rook[2] == (3, 4):
                     self.__dprint("横歩取り")
-                    return "横歩取り"
+                    self.senkei_classify.phylum = "横歩取り"
                 elif self.rook_trace.w_rook[2] == (7, 6):
                     self.__dprint("後手横歩取り")  # ひとまず先後分けておく
-                    return "後手横歩取り"
+                    self.senkei_classify.phylum = "後手横歩取り"
                 else:
                     self.__dprint("相掛かり")
-                    return "相掛かり"
+                    self.senkei_classify.phylum = "相掛かり"
             # 矢倉雁木は左銀の判定ルーチンを入れる
             else:
                 self.__dprint("相居飛車その他の戦型")
-                return "相居飛車その他の戦型"
+                self.senkei_classify.phylum = "相居飛車その他の戦型"
         elif self.is_black_ranging_rook and self.is_white_ranging_rook:
             self.__dprint("相振り飛車")
+            self.senkei_classify.kingdom = "相振り飛車"
             self.__dprint(self.black_str + self.white_str)
+            self.senkei_classify.phylum = self.black_str + self.white_str
             return self.black_str + self.white_str
         elif self.is_black_static_rook and self.is_white_ranging_rook:
+            self.senkei_classify.kingdom = "後手振り飛車"
             if self.bishop_exchange.is_exchange:  # 角交換が行われた
                 self.__dprint("後手角交換振り飛車")
                 self.__dprint(self.white_str)
-                return f"後手角交換{self.white_str[2:]}"
+                self.senkei_classify.phylum = f"後手角交換{self.white_str[2:]}"
             else:
                 self.__dprint("後手ノーマル振り飛車")
                 self.__dprint(self.white_str)
-                return f"後手ノーマル{self.white_str[2:]}"
+                self.senkei_classify.phylum = f"後手ノーマル{self.white_str[2:]}"
         elif self.is_black_ranging_rook and self.is_white_static_rook:
+            self.senkei_classify.kingdom = "先手振り飛車"
             if self.bishop_exchange.is_exchange:  # 角交換が行われた
                 self.__dprint("先手角交換振り飛車")
                 self.__dprint(self.black_str)
-                return f"先手角交換{self.black_str[2:]}"
+                self.senkei_classify.phylum = f"先手角交換{self.black_str[2:]}"
             else:
                 self.__dprint("先手ノーマル振り飛車")
                 self.__dprint(self.black_str)
-                return f"先手ノーマル{self.black_str[2:]}"
-
-
+                self.senkei_classify.phylum = f"先手ノーマル{self.black_str[2:]}"
