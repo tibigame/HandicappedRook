@@ -45,7 +45,7 @@ class DoubleStaticRookTest(unittest.TestCase):
 
     def test_4(self):
         kifu_sfen = "7g7f 8c8d 7i6h 3c3d 6h7g 7a6b 5g5f 3a4b 3i4h 5c5d 6i7h 4a3b 4i5h 5a4a " +\
-                    "5i6i 6a5b 6g6f 4b3c 5h6g 2b3a 3g3f 3a6d 4h3g 4c4d 8h7i 5b4c 7i6h 4a3a 6i7i 3a2b 7i8h 7c7d 2g2f"
+                    "5i6i 6a5b 6g6f 4b3c 5h6g 2b3a 3g3f 3a6d 4h3g 4c4d 8h7i 5b4c 7i6h 4a3a 6i7i 3a2b 7i8h 7c7d"
         result = large_test(make_kifu_list(kifu_sfen))
         self.assertEqual("相居飛車", result.kingdom)
         self.assertEqual("矢倉", result.phylum)

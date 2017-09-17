@@ -1220,6 +1220,10 @@ class Senkei:
             elif w in {"後手中飛車右", "後手四間飛車", "後手三間飛車", "後手向かい飛車"}:
                 self.is_white_static_rook = False
                 self.white_str = "後手中飛車" if w == "後手中飛車右" else w
+            if b == "先手居飛車模様" and self.rook_trace.b_king[-1][0] >= 6:
+                self.is_black_ranging_rook = False
+            if w == "後手居飛車模様" and self.rook_trace.w_king[-1][0] <= 4:
+                self.is_white_ranging_rook = False
             if tesuu > 40:
                 if b == "先手居飛車模様":
                     self.is_black_ranging_rook = False
