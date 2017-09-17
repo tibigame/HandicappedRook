@@ -1,7 +1,10 @@
 ﻿from typing import List
+from typing import Tuple
+from typing import Set
 from abc import ABCMeta, abstractmethod
 from Board import Move_Detail
 from util import xor
+from util import reverse_bw
 from util import d_print
 
 
@@ -121,6 +124,459 @@ class EdgeP36(SenkeiPartsBase):
         elif self.b_9 == 7 and self.w_9 == 5:
             result.append("9筋後手突き越し")
         return result
+
+
+class KingLeftCastle(SenkeiPartsBase):
+    """先手の左側への囲いを規定する"""
+    def __init__(self, debug=False, is_black=True):
+        super().__init__()
+        self.update = True
+        self.is_black = is_black
+        self.left_n = [self.reg_pos((8, 9))]  # 左桂
+        self.left_s = [self.reg_pos((7, 9))]  # 左銀
+        self.left_g = [self.reg_pos((6, 9))]  # 左金
+        self.k = [self.reg_pos((5, 9))]  # 玉
+        self.right_g = [self.reg_pos((4, 9))]  # 右金
+        self.right_s = [self.reg_pos((3, 9))]  # 右銀
+        self.p6 = False  # 6筋の歩
+        self.s38_str = "38銀" if self.is_black else "72銀"
+        self.castle_set = {  # 指し手を進めるたびに不要なものをセットから消していく方式
+            "矢倉", "菊水矢倉", "雁木", "急戦矢倉", "右玉",
+            "中原囲い", "中住まい", self.s38_str,
+            "早囲い", "片矢倉", "Bonanza囲い",
+            "舟囲い", "elmo囲い", "ミレニアム",
+            "左美濃", "天守閣美濃", "端玉銀冠", "銀冠", "銀冠穴熊", "穴熊", "松尾流穴熊", "4枚穴熊", "ビッグ4"
+        }
+        self.debug = debug
+
+    def reg_pos(self, p: Tuple[int, int]):
+        return reverse_bw(p, self.is_black)
+
+    # デバッグプリント用
+    def __dprint(self, string: str):
+        d_print(string, is_debug=self.debug)
+
+    def move(self, m_d: Move_Detail):
+        if not self.update:
+            return
+        if m_d.type == "place":  # 駒を打ったならスルー
+            return
+        if self.is_black:
+            is_move_p = m_d.move_piece_str == "P"
+            is_move_n = m_d.move_piece_str == "N"
+            is_move_s = m_d.move_piece_str == "S"
+            is_move_g = m_d.move_piece_str == "G"
+            is_move_k = m_d.move_piece_str == "K"
+        else:
+            is_move_p = m_d.move_piece_str == "p"
+            is_move_n = m_d.move_piece_str == "n"
+            is_move_s = m_d.move_piece_str == "s"
+            is_move_g = m_d.move_piece_str == "g"
+            is_move_k = m_d.move_piece_str == "k"
+
+        if is_move_p and m_d.moved == self.reg_pos((6, 6)):  # 66歩の判定
+            self.__dprint("先手66歩")
+            self.castle_set -= {"急戦矢倉"}
+            self.p6 = True
+        elif is_move_n:  # 菊水矢倉かミレニアムの可能性
+            if m_d.moved == self.reg_pos((7, 7)):  # 77桂だけを判定すればよい
+                self.__dprint("先手77桂")
+                self.castle_set -= {"矢倉", "早囲い", "片矢倉", "Bonanza囲い", "舟囲い", "elmo囲い",
+                                    "穴熊", "銀冠穴熊", "松尾流穴熊", "4枚穴熊", "ビッグ4"}
+                self.left_n.append(m_d.moved)
+        elif is_move_s:  # 左銀か右銀かを分離する
+            if m_d.pos == self.left_s[-1]:  # 左銀の現在位置は記録してある
+                if m_d.moved == self.reg_pos((8, 8)):  # 88銀の場合 (穴熊のハッチを閉める or 矢倉か銀冠の途中)
+                    if self.k[-1] == self.reg_pos((9, 9)):
+                        self.castle_set &= {"穴熊", "銀冠穴熊", "松尾流穴熊", "4枚穴熊", "ビッグ4"}
+                    else:  # 左美濃と雁木が消える
+                        self.castle_set -= {"雁木", "左美濃", "天守閣美濃", "舟囲い", "elmo囲い"}
+                elif m_d.moved == self.reg_pos((7, 8)):  # 78銀の場合 (左美濃 or 矢倉か銀冠の途中)
+                    self.castle_set -= {"穴熊", "松尾流穴熊", "舟囲い", "elmo囲い"}
+                elif m_d.moved == self.reg_pos((6, 8)):  # 68銀の場合 (矢倉の途中 or カニ囲い or elmo囲い)
+                    self.castle_set &= {"矢倉", "雁木", "急戦矢倉", "早囲い", "片矢倉", "Bonanza囲い", "右玉", "elmo囲い"}
+                elif m_d.moved == self.reg_pos((8, 7)):  # 87銀の場合 (銀冠)
+                    self.castle_set &= {"端玉銀冠", "銀冠", "銀冠穴熊", "4枚穴熊", "ビッグ4", "右玉"}
+                elif m_d.moved == self.reg_pos((7, 7)):  # 77銀の場合 (矢倉)
+                    self.castle_set &= {"矢倉", "急戦矢倉", "右玉", "早囲い", "片矢倉", "Bonanza囲い"}
+                elif m_d.moved == self.reg_pos((6, 7)):  # 67銀の場合 (雁木)
+                    self.castle_set &= {"雁木", "右玉"}
+                elif m_d.moved == self.reg_pos((6, 6)):  # 66銀の場合 (急戦矢倉)
+                    self.castle_set &= {"急戦矢倉", "右玉"}
+                self.left_s.append(m_d.moved)
+            else:  # 右銀
+                if m_d.moved == self.reg_pos((7, 7)):  # 77銀の場合 (4枚穴熊、ビッグ4、4枚左美濃)
+                    self.castle_set &= {"4枚穴熊", "ビッグ4", "左美濃", "天守閣美濃", "端玉銀冠", "銀冠"}
+                elif m_d.moved == self.reg_pos((7, 9)):  # 79銀の場合 (松尾流穴熊)
+                    self.castle_set &= {"松尾流穴熊"}
+                self.right_s.append(m_d.moved)
+        elif is_move_g:  # 左金か右金かを分離する
+            if m_d.pos == self.left_g[-1]:  # 左金の現在位置は記録してある
+                if m_d.moved == self.reg_pos((7, 8)):  # 78金の場合 (通常系：矢倉、雁木、銀冠、穴熊など)
+                    self.castle_set -= {"早囲い", "片矢倉", "Bonanza囲い", "舟囲い", "elmo囲い", "左美濃", "天守閣美濃"}
+                elif m_d.moved == self.reg_pos((6, 8)):  # 68金の場合 (片矢倉、Bonanza囲い)
+                    self.castle_set &= {"急戦矢倉", "右玉", "片矢倉", "Bonanza囲い"}
+                elif m_d.moved == self.reg_pos((7, 9)):  # 79金の場合 (穴熊、elmo囲い)
+                    self.castle_set &= {"elmo囲い", "銀冠穴熊", "穴熊", "4枚穴熊", "ビッグ4"}
+                elif m_d.moved == self.reg_pos((8, 8)):  # 88金の場合 (おそらく銀冠穴熊)
+                    self.castle_set &= {"銀冠穴熊", "4枚穴熊", "ビッグ4"}
+                elif self.reg_pos(m_d.moved)[0] <= 5:  # 5筋より右なら無視
+                    self.castle_set &= set()
+                self.left_g.append(m_d.moved)
+            else:  # 右金
+                if m_d.moved == self.reg_pos((5, 8)):  # 58金の場合 (通常系)
+                    self.castle_set -= {"中原囲い", "中住まい", self.s38_str}
+                elif m_d.moved == self.reg_pos((5, 9)):  # 59金の場合 (穴熊 or 中原囲い)
+                    self.castle_set &= {"中原囲い", "銀冠穴熊", "穴熊", "4枚穴熊", "ビッグ4", "松尾流穴熊"}
+                elif m_d.moved == self.reg_pos((4, 8)):  # 48金
+                    pass
+                elif m_d.moved == self.reg_pos((3, 8)):  # 38金
+                    self.castle_set &= {"中住まい"}
+                elif self.reg_pos(m_d.moved)[0] <= 4:  # 4筋より右なら無視
+                    self.castle_set = set()
+                elif m_d.moved == self.reg_pos((6, 7)):  # 67金の場合 (矢倉 or 左美濃系 or 銀冠)
+                    self.castle_set -= {"雁木", "急戦矢倉", "右玉", "Bonanza囲い", "舟囲い", "elmo囲い"}
+                elif m_d.moved == self.reg_pos((6, 8)):  # 68金の場合 (角交換系が多いが他で判断する)
+                    self.castle_set -= {"右玉"}
+                elif self.reg_pos(m_d.moved)[0] >= 7:  # 7筋より左ならおそらく穴熊系
+                    pass
+                self.right_g.append(m_d.moved)
+        elif is_move_k:
+            if m_d.moved == self.reg_pos((5, 8)):  # 58玉の場合 (中住まい、中原囲い)
+                self.castle_set &= {"中原囲い", "中住まい", self.s38_str}
+            elif m_d.moved == self.reg_pos((6, 8)):  # 68玉の場合 (矢倉だと早囲いの可能性、舟囲い系)
+                self.castle_set -= {"右玉", "中原囲い", "中住まい", self.s38_str}
+            elif m_d.moved == self.reg_pos((6, 9)):  # 69玉の場合 (おそらく78金が入っている：矢倉、雁木の通常系、中原囲い)
+                self.castle_set -= {"右玉", "中住まい", self.s38_str, "早囲い", "片矢倉", "Bonanza囲い",
+                                    "舟囲い", "elmo囲い", "左美濃", "天守閣美濃"}
+            elif m_d.moved == self.reg_pos((7, 8)):  # 78玉の場合 (矢倉だと早囲いの可能性、舟囲い系)
+                self.castle_set -= {"中原囲い"}
+            elif m_d.moved == self.reg_pos((8, 7)):  # 87玉の場合 (天守閣美濃)
+                self.castle_set = {"左美濃", "天守閣美濃", "端玉銀冠", "銀冠", "銀冠穴熊", "4枚穴熊", "ビッグ4"}
+            elif m_d.moved == self.reg_pos((9, 8)):  # 98玉の場合 (端玉→銀冠かどうかのチェックをする)
+                self.castle_set = {"端玉銀冠"}
+            elif m_d.moved == self.reg_pos((7, 9)):  # 79玉の場合 (通常系)
+                self.castle_set -= {"中原囲い", "早囲い", "片矢倉", "Bonanza囲い",
+                                    "舟囲い", "elmo囲い", "天守閣美濃", "端玉銀冠", "穴熊", "松尾流穴熊"}
+            elif m_d.moved == self.reg_pos((8, 8)):  # 88玉の場合 (通常系) (88玉のelmo囲いは連盟左美濃)
+                self.castle_set -= {"天守閣美濃", "端玉銀冠", "菊水矢倉", "ミレニアム",
+                                    "舟囲い", "片矢倉", "Bonanza囲い"}
+            elif m_d.moved == self.reg_pos((8, 9)):  # 88玉の場合 (ミレニアムか菊水矢倉)
+                self.castle_set = {"菊水矢倉", "ミレニアム"}
+            elif m_d.moved == self.reg_pos((9, 9)):  # 99玉の場合 (穴熊)
+                self.castle_set = {"銀冠穴熊", "穴熊", "松尾流穴熊", "4枚穴熊", "ビッグ4"}
+            elif self.reg_pos(m_d.moved)[0] <= 4:  # 4筋より右なら無視
+                self.castle_set &= {"右玉"}
+            self.k.append(m_d.moved)
+
+    def deep_check(self, castle_type: str) -> bool:
+        valid_flag = True
+        if castle_type == "松尾流穴熊":
+            if self.k[-1] != self.reg_pos((9, 9)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((9, 9))}でない")
+                valid_flag = False
+            if self.left_s[-1] != self.reg_pos((8, 8)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((8, 8))}でない")
+                valid_flag = False
+            if self.right_s[-1] != self.reg_pos((7, 9)):
+                self.__dprint(f"[{castle_type}]: 右銀が{self.reg_pos((7, 9))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((7, 8)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((7, 8))}でない")
+                valid_flag = False
+            if self.left_n[-1] != self.reg_pos((8, 9)):
+                self.__dprint(f"[{castle_type}]: 左桂が{self.reg_pos((8, 9))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "ビッグ4":
+            if self.k[-1] != self.reg_pos((9, 9)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((9, 9))}でない")
+                valid_flag = False
+            if self.left_s[-1] != self.reg_pos((8, 7)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((8, 7))}でない")
+                valid_flag = False
+            if self.right_s[-1] != self.reg_pos((7, 7)):
+                self.__dprint(f"[{castle_type}]: 右銀が{self.reg_pos((7, 7))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((7, 8)) or self.left_g[-1] != self.reg_pos((8, 8)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((7, 8))}か{self.reg_pos((8, 8))}でない")
+                valid_flag = False
+            if self.right_g[-1] != self.reg_pos((7, 8)) or self.right_g[-1] != self.reg_pos((8, 8)):
+                self.__dprint(f"[{castle_type}]: 右金が{self.reg_pos((7, 8))}か{self.reg_pos((8, 8))}でない")
+                valid_flag = False
+            if self.left_n[-1] != self.reg_pos((8, 9)):
+                self.__dprint(f"[{castle_type}]: 左桂が{self.reg_pos((8, 9))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "銀冠穴熊":
+            if self.k[-1] != self.reg_pos((9, 9)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((9, 9))}でない")
+                valid_flag = False
+            if self.left_s[-1] != self.reg_pos((8, 7)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((8, 7))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((7, 8)) or self.left_g[-1] != self.reg_pos((8, 8)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((7, 8))}か{self.reg_pos((8, 8))}でない")
+                valid_flag = False
+            if self.left_n[-1] != self.reg_pos((8, 9)):
+                self.__dprint(f"[{castle_type}]: 左桂が{self.reg_pos((8, 9))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "4枚穴熊":
+            if self.k[-1] != self.reg_pos((9, 9)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((9, 9))}でない")
+                valid_flag = False
+            if self.reg_pos(self.left_s[-1]) <= 6:
+                self.__dprint(f"[{castle_type}]: 左銀が左端から3筋までにない")
+                valid_flag = False
+            if self.reg_pos(self.right_s[-1]) <= 6:
+                self.__dprint(f"[{castle_type}]: 右銀が左端から3筋までにない")
+                valid_flag = False
+            if self.reg_pos(self.left_g[-1]) <= 6:
+                self.__dprint(f"[{castle_type}]: 左金が左端から3筋までにない")
+                valid_flag = False
+            if self.reg_pos(self.right_g[-1]) <= 6:
+                self.__dprint(f"[{castle_type}]: 右金が左端から3筋までにない")
+                valid_flag = False
+            if self.left_n[-1] != self.reg_pos((8, 9)):
+                self.__dprint(f"[{castle_type}]: 左桂が{self.reg_pos((8, 9))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "穴熊":
+            if self.k[-1] != self.reg_pos((9, 9)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((9, 9))}でない")
+                valid_flag = False
+            if self.reg_pos(self.left_s[-1]) <= 6:
+                self.__dprint(f"[{castle_type}]: 左銀が左端から3筋までにない")
+                valid_flag = False
+            if self.reg_pos(self.left_g[-1]) <= 6:
+                self.__dprint(f"[{castle_type}]: 左金が左端から3筋までにない")
+                valid_flag = False
+            if self.left_n[-1] != self.reg_pos((8, 9)):
+                self.__dprint(f"[{castle_type}]: 左桂が{self.reg_pos((8, 9))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "ミレニアム":
+            if self.k[-1] != self.reg_pos((8, 9)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((8, 9))}でない")
+                valid_flag = False
+            if self.reg_pos(self.left_s[-1]) <= 6:
+                self.__dprint(f"[{castle_type}]: 左銀が左端から3筋までにない")
+                valid_flag = False
+            if self.reg_pos(self.left_g[-1]) <= 6:
+                self.__dprint(f"[{castle_type}]: 左金が左端から3筋までにない")
+                valid_flag = False
+            if self.reg_pos(self.right_g[-1]) <= 5:
+                self.__dprint(f"[{castle_type}]: 右金が左端から4筋までにない")
+                valid_flag = False
+            if self.left_n[-1] != self.reg_pos((7, 7)):
+                self.__dprint(f"[{castle_type}]: 左桂が{self.reg_pos((7, 7))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "菊水矢倉":
+            if self.k[-1] != self.reg_pos((8, 9)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((8, 9))}でない")
+                valid_flag = False
+            if self.left_s[-1] != self.reg_pos((8, 8)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((8, 8))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((7, 8)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((7, 8))}でない")
+                valid_flag = False
+            if self.right_g[-1] != self.reg_pos((6, 7)):
+                self.__dprint(f"[{castle_type}]: 右金が{self.reg_pos((6, 7))}でない")
+                valid_flag = False
+            if self.left_n[-1] != self.reg_pos((7, 7)):
+                self.__dprint(f"[{castle_type}]: 左桂が{self.reg_pos((7, 7))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "端玉銀冠":
+            if self.k[-1] != self.reg_pos((9, 8)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((9, 8))}でない")
+                valid_flag = False
+            if self.left_s[-1] != self.reg_pos((8, 7)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((8, 7))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((7, 8)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((7, 8))}でない")
+                valid_flag = False
+            if self.reg_pos(self.right_g[-1]) <= 5:
+                self.__dprint(f"[{castle_type}]: 右金が左端から4筋までにない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "天守閣美濃":
+            if self.k[-1] != self.reg_pos((8, 7)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((8, 7))}でない")
+                valid_flag = False
+            if self.left_s[-1] != self.reg_pos((7, 8)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((7, 8))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((6, 9)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((6, 9))}でない")
+                valid_flag = False
+            if self.reg_pos(self.right_g[-1]) <= 4:
+                self.__dprint(f"[{castle_type}]: 右金が左端から5筋までにない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "天守閣美濃":
+            if self.k[-1] != self.reg_pos((8, 7)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((8, 7))}でない")
+                valid_flag = False
+            if self.left_s[-1] != self.reg_pos((7, 8)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((7, 8))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((6, 9)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((6, 9))}でない")
+                valid_flag = False
+            if self.reg_pos(self.right_g[-1]) <= 4:
+                self.__dprint(f"[{castle_type}]: 右金が端から5筋までにない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "左美濃":
+            if self.k[-1] != self.reg_pos((8, 8)) and self.k[-1] != self.reg_pos((7, 9)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((8, 8))}、{self.reg_pos((7, 9))}でない")
+                valid_flag = False
+            if self.left_s[-1] != self.reg_pos((7, 8)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((7, 8))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((6, 9)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((6, 9))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "銀冠":
+            if self.k[-1] != self.reg_pos((8, 8)) and self.k[-1] != self.reg_pos((7, 9)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((8, 8))}、{self.reg_pos((7, 9))}でない")
+                valid_flag = False
+            if self.left_s[-1] != self.reg_pos((8, 7)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((8, 7))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((7, 8)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((7, 8))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "舟囲い":
+            if self.k[-1] != self.reg_pos((7, 8)) and self.k[-1] != self.reg_pos((6, 8)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((7, 8))}、{self.reg_pos((6, 8))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "elmo囲い":
+            if self.k[-1] != self.reg_pos((8, 8)) and self.k[-1] != self.reg_pos((7, 8)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((8, 8))}、{self.reg_pos((7, 8))}でない")
+                valid_flag = False
+            if self.left_s[-1] != self.reg_pos((6, 8)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((6, 8))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((7, 9)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((7, 9))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "中住まい":
+            if self.k[-1] != self.reg_pos((5, 8)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((5, 8))}でない")
+                valid_flag = False
+            if self.right_s[-1] != self.reg_pos((4, 8)):
+                self.__dprint(f"[{castle_type}]: 右銀が{self.reg_pos((4, 8))}でない")
+                valid_flag = False
+            if self.right_g[-1] != self.reg_pos((3, 8)):
+                self.__dprint(f"[{castle_type}]: 右金が{self.reg_pos((3, 8))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == self.s38_str:
+            if self.k[-1] != self.reg_pos((5, 8)) and self.k[-1] != self.reg_pos((6, 8)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((5, 8))}、{self.reg_pos((6, 8))}でない")
+                valid_flag = False
+            if self.right_s[-1] != self.reg_pos((3, 8)) and self.right_s[-1] != self.reg_pos((4, 7)):
+                self.__dprint(f"[{castle_type}]: 右銀が{self.reg_pos((3, 8))}、{self.reg_pos((4, 7))}でない")
+                valid_flag = False
+            if self.right_g[-1] != self.reg_pos((4, 9)) and self.right_g[-1] != self.reg_pos((5, 8)):
+                self.__dprint(f"[{castle_type}]: 右金が{self.reg_pos((4, 9))}、{self.reg_pos((5, 8))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "中原囲い":
+            if self.k[-1] != self.reg_pos((5, 8)) and self.k[-1] != self.reg_pos((6, 9)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((5, 8))}、{self.reg_pos((6, 9))}でない")
+                valid_flag = False
+            if self.right_s[-1] != self.reg_pos((4, 8)):
+                self.__dprint(f"[{castle_type}]: 右銀が{self.reg_pos((4, 8))}でない")
+                valid_flag = False
+            if self.right_g[-1] != self.reg_pos((5, 9)):
+                self.__dprint(f"[{castle_type}]: 右金が{self.reg_pos((5, 9))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "早囲い":
+            if self.left_s[-1] != self.reg_pos((7, 7)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((7, 7))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((6, 9)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((6, 9))}でない")
+                valid_flag = False
+            if self.right_g[-1] != self.reg_pos((6, 7)):
+                self.__dprint(f"[{castle_type}]: 右金が{self.reg_pos((6, 7))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "片矢倉":
+            if self.k[-1] != self.reg_pos((7, 8)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((7, 8))}でない")
+                valid_flag = False
+            if self.left_s[-1] != self.reg_pos((7, 7)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((7, 7))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((6, 8)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((6, 8))}でない")
+                valid_flag = False
+            if self.right_g[-1] != self.reg_pos((6, 7)):
+                self.__dprint(f"[{castle_type}]: 右金が{self.reg_pos((6, 7))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "Bonanza囲い":
+            if self.k[-1] != self.reg_pos((7, 8)):
+                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((7, 8))}でない")
+                valid_flag = False
+            if self.left_s[-1] != self.reg_pos((7, 7)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((7, 7))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((6, 8)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((6, 8))}でない")
+                valid_flag = False
+            if self.right_g[-1] != self.reg_pos((5, 8)):
+                self.__dprint(f"[{castle_type}]: 右金が{self.reg_pos((5, 8))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "雁木":
+            if self.left_s[-1] != self.reg_pos((6, 7)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((6, 7))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((7, 8)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((7, 8))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "矢倉":
+            if self.left_s[-1] != self.reg_pos((7, 7)):
+                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((7, 7))}でない")
+                valid_flag = False
+            if self.left_g[-1] != self.reg_pos((7, 8)):
+                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((7, 8))}でない")
+                valid_flag = False
+            if self.right_g[-1] != self.reg_pos((6, 7)) and self.right_g[-1] != self.reg_pos((6, 8)):
+                self.__dprint(f"[{castle_type}]: 右金が{self.reg_pos((6, 7))}、{self.reg_pos((6, 8))}でない")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        elif castle_type == "急戦矢倉":
+            if not self.p6:
+                self.__dprint(f"[{castle_type}]: 角道を歩で止めている")
+                valid_flag = False
+            self.__dprint(f"[{castle_type}]: check passed")
+        return valid_flag
+
+    def stat_str(self) -> Set[str]:
+        if len(self.castle_set) == 0:
+            return {"その他の囲い"}
+        if len(self.castle_set) == 1:
+            return {x for x in self.castle_set}
+        for x in self.castle_set:
+            if not self.deep_check(x):
+                self.castle_set.remove(x)
+        return {x for x in self.castle_set}
 
 
 class RightSilverMethod(SenkeiPartsBase):
@@ -744,6 +1200,8 @@ class Senkei:
         self.black_ranging_rook = BlackRangingRook()
         self.white_ranging_rook = WhiteRangingRook()
         self.double_ranging_rook = DoubleRangingRook()
+        self.black_king_left_castle = KingLeftCastle(is_black=True)
+        self.white_king_left_castle = KingLeftCastle(is_black=False)
         self.black_str = None
         self.white_str = None
         self.senkei_classify = SenkeiClassify()
@@ -757,6 +1215,8 @@ class Senkei:
         self.edge_p36.move(m_d)
         if self.is_black_static_rook and self.is_white_static_rook:
             self.double_static_rook.move(m_d)
+        self.black_king_left_castle.move(m_d)
+        self.white_king_left_castle.move(m_d)
         self.bishop_exchange.move(m_d)
         self.bishop_line.move(m_d)
         self.rook_trace.move(m_d)
@@ -792,6 +1252,8 @@ class Senkei:
         if self.black_str and self.white_str:
             print(f"{self.black_str}")
             print(f"{self.white_str}")
+        print(f"先手{self.black_king_left_castle.castle_set}")
+        print(f"後手{self.white_king_left_castle.castle_set}")
 
     def test(self):
         b = self.rook_trace.check_b()
@@ -811,10 +1273,13 @@ class Senkei:
         elif self.is_black_static_rook and self.is_white_static_rook:
             self.__dprint("相居飛車")
             self.senkei_classify.kingdom = "相居飛車"
+            move_black_rook = len(self.rook_trace.b_rook) >= 2
+            move_white_rook = len(self.rook_trace.w_rook) >= 2
             if self.bishop_exchange.is_exchange:  # 角交換が行われた
                 self.__dprint("角換わり")
                 self.senkei_classify.phylum = "角換わり"
-            elif self.rook_trace.b_rook[1] == (2, 4) or self.rook_trace.w_rook[1] == (8, 6):
+            elif (move_black_rook and self.rook_trace.b_rook[1] == (2, 4)) or\
+                    (move_white_rook and self.rook_trace.w_rook[1] == (8, 6)):
                 if self.rook_trace.b_rook[2] == (3, 4):
                     self.__dprint("横歩取り")
                     self.senkei_classify.phylum = "横歩取り"
@@ -824,7 +1289,30 @@ class Senkei:
                 else:
                     self.__dprint("相掛かり")
                     self.senkei_classify.phylum = "相掛かり"
-            # 矢倉雁木は左銀の判定ルーチンを入れる
+            elif self.black_king_left_castle.stat_str() & \
+                    {"矢倉", "雁木", "急戦矢倉", "菊水矢倉", "早囲い", "片矢倉", "Bonanza囲い"}\
+                    and self.white_king_left_castle.stat_str() & \
+                    {"矢倉", "雁木", "急戦矢倉", "菊水矢倉", "早囲い", "片矢倉", "Bonanza囲い"}:
+                self.__dprint("矢倉")
+                self.senkei_classify.phylum = "矢倉"
+                if self.black_king_left_castle.stat_str() & {"矢倉"} \
+                        and self.white_king_left_castle.stat_str() & {"矢倉"}:
+                    self.senkei_classify.subphylum = "相矢倉"
+                elif self.black_king_left_castle.stat_str() & {"雁木"} \
+                        and self.white_king_left_castle.stat_str() & {"雁木"}:
+                    self.senkei_classify.subphylum = "相雁木"
+                elif self.black_king_left_castle.stat_str() & {"雁木"}:
+                    self.senkei_classify.subphylum = "先手雁木"
+                elif self.white_king_left_castle.stat_str() & {"雁木"}:
+                    self.senkei_classify.subphylum = "後手雁木"
+                elif self.white_king_left_castle.stat_str() & {"急戦矢倉"}:
+                    self.senkei_classify.subphylum = "急戦矢倉"
+                elif self.black_king_left_castle.stat_str() & {"急戦矢倉"}:
+                    self.senkei_classify.subphylum = "先手急戦矢倉"
+                elif self.black_king_left_castle.stat_str() & {"片矢倉"} and self.bishop_exchange.is_exchange:
+                    self.senkei_classify.subphylum = "藤井矢倉"
+                else:
+                    self.senkei_classify.subphylum = "矢倉その他"
             else:
                 self.__dprint("相居飛車その他の戦型")
                 self.senkei_classify.phylum = "相居飛車その他の戦型"
