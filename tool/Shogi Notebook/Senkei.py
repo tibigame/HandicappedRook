@@ -326,16 +326,16 @@ class KingLeftCastle(SenkeiPartsBase):
             if self.k[-1] != self.reg_pos((9, 9)):
                 self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((9, 9))}でない")
                 valid_flag = False
-            if self.reg_pos(self.left_s[-1]) <= 6:
+            if self.reg_pos(self.left_s[-1])[0] <= 6:
                 self.__dprint(f"[{castle_type}]: 左銀が左端から3筋までにない")
                 valid_flag = False
-            if self.reg_pos(self.right_s[-1]) <= 6:
+            if self.reg_pos(self.right_s[-1])[0] <= 6:
                 self.__dprint(f"[{castle_type}]: 右銀が左端から3筋までにない")
                 valid_flag = False
-            if self.reg_pos(self.left_g[-1]) <= 6:
+            if self.reg_pos(self.left_g[-1])[0] <= 6:
                 self.__dprint(f"[{castle_type}]: 左金が左端から3筋までにない")
                 valid_flag = False
-            if self.reg_pos(self.right_g[-1]) <= 6:
+            if self.reg_pos(self.right_g[-1])[0] <= 6:
                 self.__dprint(f"[{castle_type}]: 右金が左端から3筋までにない")
                 valid_flag = False
             if self.left_n[-1] != self.reg_pos((8, 9)):
@@ -346,10 +346,10 @@ class KingLeftCastle(SenkeiPartsBase):
             if self.k[-1] != self.reg_pos((9, 9)):
                 self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((9, 9))}でない")
                 valid_flag = False
-            if self.reg_pos(self.left_s[-1]) <= 6:
+            if self.reg_pos(self.left_s[-1])[0] <= 6:
                 self.__dprint(f"[{castle_type}]: 左銀が左端から3筋までにない")
                 valid_flag = False
-            if self.reg_pos(self.left_g[-1]) <= 6:
+            if self.reg_pos(self.left_g[-1])[0] <= 6:
                 self.__dprint(f"[{castle_type}]: 左金が左端から3筋までにない")
                 valid_flag = False
             if self.left_n[-1] != self.reg_pos((8, 9)):
@@ -360,13 +360,13 @@ class KingLeftCastle(SenkeiPartsBase):
             if self.k[-1] != self.reg_pos((8, 9)):
                 self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((8, 9))}でない")
                 valid_flag = False
-            if self.reg_pos(self.left_s[-1]) <= 6:
+            if self.reg_pos(self.left_s[-1])[0] <= 6:
                 self.__dprint(f"[{castle_type}]: 左銀が左端から3筋までにない")
                 valid_flag = False
-            if self.reg_pos(self.left_g[-1]) <= 6:
+            if self.reg_pos(self.left_g[-1])[0] <= 6:
                 self.__dprint(f"[{castle_type}]: 左金が左端から3筋までにない")
                 valid_flag = False
-            if self.reg_pos(self.right_g[-1]) <= 5:
+            if self.reg_pos(self.right_g[-1])[0] <= 5:
                 self.__dprint(f"[{castle_type}]: 右金が左端から4筋までにない")
                 valid_flag = False
             if self.left_n[-1] != self.reg_pos((7, 7)):
@@ -400,7 +400,7 @@ class KingLeftCastle(SenkeiPartsBase):
             if self.left_g[-1] != self.reg_pos((7, 8)):
                 self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((7, 8))}でない")
                 valid_flag = False
-            if self.reg_pos(self.right_g[-1]) <= 5:
+            if self.reg_pos(self.right_g[-1])[0] <= 5:
                 self.__dprint(f"[{castle_type}]: 右金が左端から4筋までにない")
                 valid_flag = False
             self.__dprint(f"[{castle_type}]: check passed")
@@ -414,7 +414,7 @@ class KingLeftCastle(SenkeiPartsBase):
             if self.left_g[-1] != self.reg_pos((6, 9)):
                 self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((6, 9))}でない")
                 valid_flag = False
-            if self.reg_pos(self.right_g[-1]) <= 4:
+            if self.reg_pos(self.right_g[-1])[0] <= 4:
                 self.__dprint(f"[{castle_type}]: 右金が端から5筋までにない")
                 valid_flag = False
             self.__dprint(f"[{castle_type}]: check passed")
@@ -552,6 +552,7 @@ class KingLeftCastle(SenkeiPartsBase):
                 self.__dprint(f"[{castle_type}]: 角道を歩で止めている")
                 valid_flag = False
             self.__dprint(f"[{castle_type}]: check passed")
+        self.__dprint(f"[{castle_type}]: {valid_flag}")
         return valid_flag
 
     def stat_str(self) -> Set[str]:
@@ -559,10 +560,11 @@ class KingLeftCastle(SenkeiPartsBase):
             return {"その他の囲い"}
         if len(self.castle_set) == 1:
             return {x for x in self.castle_set}
+        new_set = set()
         for x in self.castle_set:
-            if not self.deep_check(x):
-                self.castle_set.remove(x)
-        return {x for x in self.castle_set}
+            if self.deep_check(x):
+                new_set.add(x)
+        return new_set
 
 
 class RightSilverMethod(SenkeiPartsBase):
@@ -1242,8 +1244,8 @@ class Senkei:
         if self.black_str and self.white_str:
             print(f"{self.black_str}")
             print(f"{self.white_str}")
-        print(f"先手{self.black_king_left_castle.castle_set}")
-        print(f"後手{self.white_king_left_castle.castle_set}")
+        print(f"先手{self.black_king_left_castle.stat_str()}")
+        print(f"後手{self.white_king_left_castle.stat_str()}")
 
     def test(self):
         b = self.rook_trace.check_b()
