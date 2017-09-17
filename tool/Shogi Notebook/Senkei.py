@@ -415,20 +415,6 @@ class KingLeftCastle(SenkeiPartsBase):
                 self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((6, 9))}でない")
                 valid_flag = False
             if self.reg_pos(self.right_g[-1]) <= 4:
-                self.__dprint(f"[{castle_type}]: 右金が左端から5筋までにない")
-                valid_flag = False
-            self.__dprint(f"[{castle_type}]: check passed")
-        elif castle_type == "天守閣美濃":
-            if self.k[-1] != self.reg_pos((8, 7)):
-                self.__dprint(f"[{castle_type}]: 玉が{self.reg_pos((8, 7))}でない")
-                valid_flag = False
-            if self.left_s[-1] != self.reg_pos((7, 8)):
-                self.__dprint(f"[{castle_type}]: 左銀が{self.reg_pos((7, 8))}でない")
-                valid_flag = False
-            if self.left_g[-1] != self.reg_pos((6, 9)):
-                self.__dprint(f"[{castle_type}]: 左金が{self.reg_pos((6, 9))}でない")
-                valid_flag = False
-            if self.reg_pos(self.right_g[-1]) <= 4:
                 self.__dprint(f"[{castle_type}]: 右金が端から5筋までにない")
                 valid_flag = False
             self.__dprint(f"[{castle_type}]: check passed")
