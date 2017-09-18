@@ -1175,6 +1175,7 @@ class DoubleRangingRook:  # 相振り飛車クラス
 
 class Senkei:
     def __init__(self, debug=False):
+        self.komadai_monitor = False
         self.edge_p36 = EdgeP36()
         self.bishop_exchange = BishopExchange()
         self.bishop_line = BishopLine()
@@ -1199,7 +1200,20 @@ class Senkei:
     def __dprint(self, string: str):
         d_print(string, is_debug=self.debug)
 
+    def __komadai(self, m_d: Move_Detail):
+        if not m_d.get_piece_str:  # 駒を取得していない指し手ならそのまま抜ける
+            return
+        if m_d.get_piece_str in ["P", "B", "p", "b"]:  # 歩や角を取得した場合もそのまま抜ける
+            return
+        self.__dprint(f"取得した駒は{m_d.get_piece_str}")
+        self.komadai_monitor = True
+
     def move(self, m_d: Move_Detail, tesuu=1):
+        if tesuu > 50:  # 50手までで打ち切る
+            return
+        self.__komadai(m_d)
+        if self.komadai_monitor and tesuu > 24:  # 歩か角以外の駒が駒台に乗った場合は24手までで打ち切る
+            return
         self.edge_p36.move(m_d)
         if self.is_black_static_rook and self.is_white_static_rook:
             self.double_static_rook.move(m_d)
