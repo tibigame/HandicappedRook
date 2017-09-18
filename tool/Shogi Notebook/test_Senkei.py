@@ -59,6 +59,16 @@ class DoubleStaticRookTest(unittest.TestCase):
         self.assertEqual("矢倉", result.phylum)
         self.assertEqual("後手雁木", result.subphylum)
 
+
+class YokofuTest(unittest.TestCase):
+    def test_1(self):
+        kifu_sfen = "2g2f 8c8d 7g7f 3c3d 2f2e 8d8e 6i7h 4a3b 2e2d 2c2d 2h2d 8e8f 8g8f " +\
+                    "8b8f 2d3d 2b3c 3d3f 3a2b 3f2f 8f8d P*8g 5a5b 5i5h"
+        result = large_test(make_kifu_list(kifu_sfen))
+        self.assertEqual("相居飛車", result.kingdom)
+        self.assertEqual("横歩取り", result.phylum)
+
+
 class BlackRangingRookTest(unittest.TestCase):
     def test_1(self):
         kifu_sfen = "7g7f 3c3d 2h6h 8c8d 5i4h 8d8e 8h2b+ 3a2b 7i8h 5a4b 8h7g 4b3b"

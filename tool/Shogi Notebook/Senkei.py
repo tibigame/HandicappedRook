@@ -1089,6 +1089,10 @@ class KingRookTrace(SenkeiPartsBase):
 
     def check_b(self):
         if self.b_rook_front == 3:
+            if len(self.b_rook) >= 3 and self.b_rook[2] == (3, 4):  # 飛車が2回以上動いて2回目が34
+                return "横歩取り"
+            elif len(self.b_rook) >= 3 and self.b_rook[1] == (2, 4) and self.b_rook[2][0] == 2:  # 飛車が2回以上動いて2回目が2筋
+                return "相掛かり"
             return "横歩取り・相掛かり"
         if self.b_rook_front >= 1:
             if self.b_king[-1] == (5, 8) or self.b_king[-1][0] >= 6:
@@ -1113,6 +1117,10 @@ class KingRookTrace(SenkeiPartsBase):
 
     def check_w(self):
         if self.w_rook_front == 3:
+            if len(self.w_rook) >= 3 and self.w_rook[2] == (7, 6):  # 飛車が2回以上動いて2回目が76
+                return "横歩取り"
+            elif len(self.w_rook) >= 3 and self.w_rook[1] == (8, 6) and self.w_rook[2][0] == 8:  # 飛車が2回以上動いて2回目が8筋
+                return "相掛かり"
             return "横歩取り・相掛かり"
         if self.w_rook_front >= 1:
             if self.w_king[-1] == (5, 2) or self.w_king[-1][0] <= 4:
@@ -1215,38 +1223,64 @@ class Senkei:
         if self.komadai_monitor and tesuu > 24:  # 歩か角以外の駒が駒台に乗った場合は24手までで打ち切る
             return
         self.edge_p36.move(m_d)
-        if self.is_black_static_rook and self.is_white_static_rook:
+        if self.is_black_static_rook and self.is_white_static_rook:  # 相居飛車のときのみ
             self.double_static_rook.move(m_d)
-        self.black_king_left_castle.move(m_d)
-        self.white_king_left_castle.move(m_d)
-        self.bishop_exchange.move(m_d)
-        self.bishop_line.move(m_d)
-        self.rook_trace.move(m_d)
-        if tesuu > 10:
-            [b, w] = self.rook_trace.stat_str()
-            if b in {"先手居飛車", "先手横歩取り・相掛かり", "先手居飛車右玉・陽動振り飛車", "先手中飛車左"}:
-                self.is_black_ranging_rook = False
-                self.black_str = b
-            elif b in {"先手中飛車右", "先手四間飛車", "先手三間飛車", "先手向かい飛車"}:
-                self.is_black_static_rook = False
-                self.black_str = "先手中飛車" if b == "先手中飛車左" else b
-            if w in {"後手居飛車", "後手横歩取り・相掛かり", "後手居飛車右玉・陽動振り飛車", "後手中飛車左"}:
-                self.is_white_ranging_rook = False
-                self.white_str = w
-            elif w in {"後手中飛車右", "後手四間飛車", "後手三間飛車", "後手向かい飛車"}:
-                self.is_white_static_rook = False
-                self.white_str = "後手中飛車" if w == "後手中飛車右" else w
-            if b == "先手居飛車模様" and self.rook_trace.b_king[-1][0] >= 6:
-                self.is_black_ranging_rook = False
-            if w == "後手居飛車模様" and self.rook_trace.w_king[-1][0] <= 4:
-                self.is_white_ranging_rook = False
-            if tesuu > 40:
-                if b == "先手居飛車模様":
+        if self.is_black_static_rook:  # 先手居飛車のときのみ
+            self.black_king_left_castle.move(m_d)
+        if self.is_white_static_rook:  # 後手居飛車のときのみ
+            self.white_king_left_castle.move(m_d)
+        if self.senkei_classify.phylum == "横歩取り":  # 横歩取りの専用ルーチンを書く
+            # まずformを確定させる
+            # edge_p36に端歩の情報がある
+            # black_king_left_castle, white_king_left_castleに玉、右金、右銀の情報がある
+            # 玉、右金、右銀の移動で許されるのはそれぞれ最大1回まで
+            # 端歩を合わせた動きの回数合計は先手が1つ多いか同じであること
+            # 同じなら先手が34飛と横歩を取っている先手が1多いなら後手が76飛と横歩を取っている
+            # それ以外(先手が75歩のような手待ちをして76飛とした場合：横歩取り早石田？)は横歩取りその他と分離する
+            pass
+        if not self.senkei_classify.phylum:  # 戦型大分類が未確定の時のみ
+            self.bishop_exchange.move(m_d)
+            self.bishop_line.move(m_d)
+            self.rook_trace.move(m_d)
+            if tesuu > 10:
+                [b, w] = self.rook_trace.stat_str()
+                # 横歩取りと相掛かりはここで戦型大分類を確定させる
+                if b == "先手横歩取り" or w == "後手横歩取り":
+                    self.senkei_classify.kingdom = "相居飛車"
+                    self.senkei_classify.phylum = "横歩取り"
+                    self.is_black_ranging_rook = False
+                    self.is_white_ranging_rook = False
+                elif b == "先手相掛かり" or w == "後手相掛かり":
+                    self.senkei_classify.kingdom = "相居飛車"
+                    self.senkei_classify.phylum = "相掛かり"
+                    self.is_black_ranging_rook = False
+                    self.is_white_ranging_rook = False
+
+                if b in {"先手居飛車", "先手横歩取り・相掛かり", "先手横歩取り", "先手相掛かり",
+                         "先手居飛車右玉・陽動振り飛車", "先手中飛車左"}:
                     self.is_black_ranging_rook = False
                     self.black_str = b
-                if w == "後手居飛車模様":
+                elif b in {"先手中飛車右", "先手四間飛車", "先手三間飛車", "先手向かい飛車"}:
+                    self.is_black_static_rook = False
+                    self.black_str = "先手中飛車" if b == "先手中飛車左" else b
+                if w in {"後手居飛車", "後手横歩取り・相掛かり", "後手横歩取り", "後手相掛かり",
+                         "後手居飛車右玉・陽動振り飛車", "後手中飛車左"}:
                     self.is_white_ranging_rook = False
                     self.white_str = w
+                elif w in {"後手中飛車右", "後手四間飛車", "後手三間飛車", "後手向かい飛車"}:
+                    self.is_white_static_rook = False
+                    self.white_str = "後手中飛車" if w == "後手中飛車右" else w
+                if b == "先手居飛車模様" and self.rook_trace.b_king[-1][0] >= 6:
+                    self.is_black_ranging_rook = False
+                if w == "後手居飛車模様" and self.rook_trace.w_king[-1][0] <= 4:
+                    self.is_white_ranging_rook = False
+                if tesuu > 40:
+                    if b == "先手居飛車模様":
+                        self.is_black_ranging_rook = False
+                        self.black_str = b
+                    if w == "後手居飛車模様":
+                        self.is_white_ranging_rook = False
+                        self.white_str = w
 
     def print(self):
         self.edge_p36.print()
@@ -1286,10 +1320,10 @@ class Senkei:
                 self.senkei_classify.phylum = "角換わり"
             elif (move_black_rook and self.rook_trace.b_rook[1] == (2, 4)) or\
                     (move_white_rook and self.rook_trace.w_rook[1] == (8, 6)):
-                if self.rook_trace.b_rook[2] == (3, 4):
+                if len(self.rook_trace.b_rook) >= 3 and self.rook_trace.b_rook[2] == (3, 4):
                     self.__dprint("横歩取り")
                     self.senkei_classify.phylum = "横歩取り"
-                elif self.rook_trace.w_rook[2] == (7, 6):
+                elif len(self.rook_trace.w_rook) >= 3 and self.rook_trace.w_rook[2] == (7, 6):
                     self.__dprint("後手横歩取り")  # ひとまず先後分けておく
                     self.senkei_classify.phylum = "後手横歩取り"
                 else:
